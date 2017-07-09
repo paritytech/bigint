@@ -20,9 +20,10 @@ macro_rules! impl_hex_prefixed_serializable {
 				}
 
 				fn from_hex<E>(value: &str) -> Result<Self, E> where E: Error {
-					match value.len() {
-						2 if &value[0..2] == "0x" => value[2..].parse().map_err(|e| E::custom(&format!("{:?}", e))),
-						_ => Err(E::custom("expected hex prefixed value")),
+					if value.len() > 2 && &value[0..2] == "0x" {
+						value[2..].parse().map_err(|e| E::custom(&format!("{:?}", e)))
+					} else {
+						Err(E::custom("expected hex prefixed value"))
 					}
 				}
 			}

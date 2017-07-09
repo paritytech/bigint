@@ -3,3 +3,4 @@
 pub mod decimal;
 pub mod hex;
 pub mod hex_prefixed;
+pub mod lenient;
