@@ -13,9 +13,18 @@
 extern crate byteorder;
 extern crate rustc_hex;
 
-#[cfg(feature="heapsizeof")]
+#[cfg(feature="heapsize")]
 #[macro_use] 
-extern crate heapsize;
+extern crate heapsize as _heapsize;
 
-pub mod uint;
-pub use ::uint::*;
+#[cfg(feature="heapsize")]
+mod heapsize;
+
+#[cfg(feature="serde")]
+extern crate serde;
+
+#[cfg(feature="serde")]
+pub mod serialization;
+
+mod uint;
+pub use uint::{U128, U256, U512};
