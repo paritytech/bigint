@@ -1418,9 +1418,6 @@ impl From<U256> for u32 {
 	}
 }
 
-#[cfg(feature="heapsizeof")]
-known_heap_size!(0, U128, U256);
-
 #[cfg(test)]
 mod tests {
 	use uint::{U128, U256, U512};
