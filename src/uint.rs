@@ -71,15 +71,9 @@ macro_rules! uint_overflowing_add_reg {
 			let mut ret_ptr = ret.as_mut_ptr();
 			for _ in 0..$n_words {
 				let (res1, overflow1) = (*me_ptr).overflowing_add(*you_ptr);
-
-				if carry != 0 {
-					let (res2, overflow2) = res1.overflowing_add(carry);
-					*ret_ptr = res2;
-					carry = overflow1 as u64 + overflow2 as u64;
-				} else {
-					*ret_ptr = res1;
-					carry = overflow1 as u64;
-				}
+				let (res2, overflow2) = carry.overflowing_add(res1);
+				carry = overflow1 as u64 | overflow2 as u64;
+				*ret_ptr = res2;
 
 				me_ptr = me_ptr.offset(1);
 				you_ptr = you_ptr.offset(1);
