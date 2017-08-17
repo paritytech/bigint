@@ -63,21 +63,30 @@ macro_rules! uint_overflowing_add {
 
 macro_rules! uint_overflowing_add_reg {
 	($name:ident, $n_words:expr, $self_expr: expr, $other: expr) => ({
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
+		unsafe {
+			let mut carry = 0u64;
+			let mut ret: [u64; $n_words] = mem::uninitialized();
+			let mut me_ptr = $self_expr.0.as_ptr();
+			let mut you_ptr = $other.0.as_ptr();
+			let mut ret_ptr = ret.as_mut_ptr();
+			for _ in 0..$n_words {
+				let (res1, overflow1) = (*me_ptr).overflowing_add(*you_ptr);
 
-		let mut ret = [0u64; $n_words];
-		let mut carry = 0u64;
+				if carry != 0 {
+					let (res2, overflow2) = res1.overflowing_add(carry);
+					*ret_ptr = res2;
+					carry = overflow1 as u64 + overflow2 as u64;
+				} else {
+					*ret_ptr = res1;
+					carry = overflow1 as u64;
+				}
 
-		for i in 0..$n_words {
-			let (res1, overflow1) = me[i].overflowing_add(you[i]);
-			let (res2, overflow2) = res1.overflowing_add(carry);
-
-			ret[i] = res2;
-			carry = overflow1 as u64 + overflow2 as u64;
+				me_ptr = me_ptr.offset(1);
+				you_ptr = you_ptr.offset(1);
+				ret_ptr = ret_ptr.offset(1);
+			}
+			($name(ret), carry > 0)
 		}
-
-		($name(ret), carry > 0)
 	})
 }
 
