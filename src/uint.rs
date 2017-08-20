@@ -479,15 +479,6 @@ macro_rules! uint_full_mul_reg {
 }
 
 macro_rules! num_dwords {
-	($arr:expr, 2) => {
-		if $arr[1] != 0 {
-			2
-		} else if $arr[0] != 0 {
-			1
-		} else {
-			0
-		}
-	};
 	($arr:expr, 4) => {
 		if $arr[3] != 0 {
 			4
@@ -525,6 +516,30 @@ macro_rules! num_dwords {
 }
 
 macro_rules! uint_overflowing_mul_reg {
+	// Special-case U128 since the small-number checks make it slower by ~10%
+	($name:ident, 2, $self_expr:expr, $other:expr) => ({
+		let ret: [u64; 4] = uint_full_mul_reg!(
+			$name,
+			2,
+			$self_expr,
+			$other
+		);
+
+		// The safety of this is enforced by the compiler
+		let ret: [[u64; 2]; 2] = unsafe { mem::transmute(ret) };
+
+		// Using logical-or here explicitly is faster than the unrolled loop used for the other
+		// int sizes, but only for `[u64; 2]`. The loop is equal speed to explicit logical or for
+		// the other sizes. Your guess is as good as mine as to why.
+		//
+		// The compiler WILL NOT inline this if you remove this annotation.
+		#[inline(always)]
+		fn any_nonzero(arr: &[u64; 2]) -> bool {
+			arr[0] != 0 || arr[1] != 0
+		}
+
+		($name(ret[0]), any_nonzero(&ret[1]))
+	});
 	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
 		#![allow(unused_assignments)]
 
