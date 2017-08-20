@@ -478,7 +478,7 @@ macro_rules! uint_full_mul_reg {
 	}})
 }
 
-macro_rules! out_dwords {
+macro_rules! num_dwords {
 	($arr:expr, 2) => {
 		if $arr[1] != 0 {
 			2
@@ -531,7 +531,7 @@ macro_rules! uint_overflowing_mul_reg {
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let (self_dwords, other_dwords) = (out_dwords!(me, $n_dwords), out_dwords!(you, $n_dwords));
+		let (self_dwords, other_dwords) = (num_dwords!(me, $n_dwords), num_dwords!(you, $n_dwords));
 		let out_dwords = self_dwords + other_dwords;
 
 		// This is a safe optimization, since it's based on basic logarithmic rules.
