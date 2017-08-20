@@ -443,7 +443,7 @@ macro_rules! uint_full_mul_reg {
 		unroll! {
 			for i in 0..$n_dwords {
 				// We rely on these if-statements being eliminated by the compiler for large numbers
-				// (numbers where log(n) base 2^64 > $n_dwords / 2).
+				// (numbers where log(me * you) base 2^64 > $n_dwords).
 				if i < $other_dwords {
 					let mut carry = 0u64;
 					let (b_u, b_l) = split(you[i]);
