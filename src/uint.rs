@@ -444,13 +444,13 @@ macro_rules! uint_full_mul_reg {
 			for i in 0..$n_dwords {
 				// We rely on these if-statements being eliminated by the compiler for large numbers
 				// (numbers where log(n) base 2^64 > $n_dwords / 2).
-				if i < $self_dwords {
+				if i < $other_dwords {
 					let mut carry = 0u64;
 					let (b_u, b_l) = split(you[i]);
 
 					unroll! {
 						for j in 0..$n_dwords {
-							if j < $other_dwords {
+							if j < $self_dwords {
 								let a = split(me[j]);
 
 								// multiply parts
