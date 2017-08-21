@@ -78,11 +78,29 @@ fn u512_mul(b: &mut Bencher) {
 }
 
 #[bench]
+fn u512_mul_small(b: &mut Bencher) {
+	b.iter(|| {
+		let n = black_box(10000);
+		let one = black_box(U512::one());
+		(1..153).fold(one, |old, new| { old.overflowing_mul(U512::from(10)).0 })
+	});
+}
+
+#[bench]
 fn u256_mul(b: &mut Bencher) {
 	b.iter(|| {
 		let n = black_box(10000);
 		let one = black_box(U256::one());
 		(1..n).fold(one, |old, new| { old.overflowing_mul(U256::from(black_box(new | 1))).0 })
+	});
+}
+
+#[bench]
+fn u256_mul_small(b: &mut Bencher) {
+	b.iter(|| {
+		let n = black_box(10000);
+		let one = black_box(U256::one());
+		(1..77).fold(one, |old, new| { old.overflowing_mul(U256::from(10)).0 })
 	});
 }
 

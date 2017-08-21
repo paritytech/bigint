@@ -516,83 +516,36 @@ macro_rules! num_dwords {
 }
 
 macro_rules! uint_overflowing_mul_reg {
-	// Special-case U128 since the small-number checks make it slower by ~10%
-	($name:ident, 2, $self_expr:expr, $other:expr) => ({
-		let ret: [u64; 4] = uint_full_mul_reg!(
+	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
+		#![allow(unused_assignments)]
+
+		// This is a safe optimization, since it's based on basic logarithmic rules.
+		// `log(a * b) = log(a) + log(b)`. This specific scenario would be log base `2^64`
+		let ret: [u64; $n_dwords * 2] = uint_full_mul_reg!(
 			$name,
-			2,
+			$n_dwords,
 			$self_expr,
 			$other
 		);
 
 		// The safety of this is enforced by the compiler
-		let ret: [[u64; 2]; 2] = unsafe { mem::transmute(ret) };
+		let ret: [[u64; $n_dwords]; 2] = unsafe { mem::transmute(ret) };
 
-		// Using logical-or here explicitly is faster than the unrolled loop used for the other
-		// int sizes, but only for `[u64; 2]`. The loop is equal speed to explicit logical or for
-		// the other sizes. Your guess is as good as mine as to why.
-		//
 		// The compiler WILL NOT inline this if you remove this annotation.
 		#[inline(always)]
-		fn any_nonzero(arr: &[u64; 2]) -> bool {
-			arr[0] != 0 || arr[1] != 0
+		fn any_nonzero(arr: &[u64; $n_dwords]) -> bool {
+			unroll! {
+				for i in 0..$n_dwords {
+					if arr[i] != 0 {
+						return true;
+					}
+				}
+			}
+
+			false
 		}
 
 		($name(ret[0]), any_nonzero(&ret[1]))
-	});
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		#![allow(unused_assignments)]
-
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-
-		let (self_dwords, other_dwords) = (num_dwords!(me, $n_dwords), num_dwords!(you, $n_dwords));
-		let out_dwords = self_dwords + other_dwords;
-
-		// This is a safe optimization, since it's based on basic logarithmic rules.
-		// `log(a * b) = log(a) + log(b)`. This specific scenario would be log base `2^64`
-		if out_dwords <= $n_dwords {
-			(
-				$name(
-					uint_full_mul_reg!(
-						$name,
-						$n_dwords,
-						$n_dwords,
-						self_dwords,
-						$self_expr,
-						other_dwords,
-						$other
-					)
-				),
-				false,
-			)
-		} else {
-			let ret: [u64; $n_dwords * 2] = uint_full_mul_reg!(
-				$name,
-				$n_dwords,
-				$self_expr,
-				$other
-			);
-
-			// The safety of this is enforced by the compiler
-			let ret: [[u64; $n_dwords]; 2] = unsafe { mem::transmute(ret) };
-
-			// The compiler WILL NOT inline this if you remove this annotation.
-			#[inline(always)]
-			fn any_nonzero(arr: &[u64; $n_dwords]) -> bool {
-				unroll! {
-					for i in 0..$n_dwords {
-						if arr[i] != 0 {
-							return true;
-						}
-					}
-				}
-
-				false
-			}
-
-			($name(ret[0]), any_nonzero(&ret[1]))
-		}
 	})
 }
 
