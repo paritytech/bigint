@@ -56,16 +56,16 @@ macro_rules! impl_map_from {
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_add {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_add_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_add_reg!($name, $n_qwords, $self_expr, $other)
 	})
 }
 
 macro_rules! uint_overflowing_add_reg {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_binop!(
 			$name,
-			$n_dwords,
+			$n_qwords,
 			$self_expr,
 			$other,
 			u64::overflowing_add
@@ -75,10 +75,10 @@ macro_rules! uint_overflowing_add_reg {
 
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_add {
-	(U256, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_dwords] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_dwords] = &$self_expr.0;
-		let other_t: &[u64; $n_dwords] = &$other.0;
+	(U256, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		let mut result: [u64; $n_qwords] = unsafe { ::core::mem::uninitialized() };
+		let self_t: &[u64; $n_qwords] = &$self_expr.0;
+		let other_t: &[u64; $n_qwords] = &$other.0;
 
 		let overflow: u8;
 		unsafe {
@@ -98,10 +98,10 @@ macro_rules! uint_overflowing_add {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_dwords] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_dwords] = &$self_expr.0;
-		let other_t: &[u64; $n_dwords] = &$other.0;
+	(U512, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		let mut result: [u64; $n_qwords] = unsafe { ::core::mem::uninitialized() };
+		let self_t: &[u64; $n_qwords] = &$self_expr.0;
+		let other_t: &[u64; $n_qwords] = &$other.0;
 
 		let overflow: u8;
 
@@ -144,29 +144,29 @@ macro_rules! uint_overflowing_add {
 		(U512(result), overflow != 0)
 	});
 
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => (
-		uint_overflowing_add_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => (
+		uint_overflowing_add_reg!($name, $n_qwords, $self_expr, $other)
 	)
 }
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_sub {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_sub_reg!($name, $n_qwords, $self_expr, $other)
 	})
 }
 
 macro_rules! uint_overflowing_binop {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr, $fn:expr) => ({
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr, $fn:expr) => ({
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
 		let mut ret = unsafe { ::core::mem::uninitialized() };
-		let ret_ptr = &mut ret as *mut [u64; $n_dwords] as *mut u64;
+		let ret_ptr = &mut ret as *mut [u64; $n_qwords] as *mut u64;
 		let mut carry = 0u64;
 
 		unroll! {
-			for i in 0..$n_dwords {
+			for i in 0..$n_qwords {
 				use ::core::ptr;
 
 				if carry != 0 {
@@ -200,10 +200,10 @@ macro_rules! uint_overflowing_binop {
 }
 
 macro_rules! uint_overflowing_sub_reg {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_binop!(
 			$name,
-			$n_dwords,
+			$n_qwords,
 			$self_expr,
 			$other,
 			u64::overflowing_sub
@@ -213,10 +213,10 @@ macro_rules! uint_overflowing_sub_reg {
 
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_sub {
-	(U256, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_dwords] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_dwords] = &$self_expr.0;
-		let other_t: &[u64; $n_dwords] = &$other.0;
+	(U256, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		let mut result: [u64; $n_qwords] = unsafe { ::core::mem::uninitialized() };
+		let self_t: &[u64; $n_qwords] = &$self_expr.0;
+		let other_t: &[u64; $n_qwords] = &$other.0;
 
 		let overflow: u8;
 		unsafe {
@@ -235,10 +235,10 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U256(result), overflow != 0)
 	});
-	(U512, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_dwords] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_dwords] = &$self_expr.0;
-		let other_t: &[u64; $n_dwords] = &$other.0;
+	(U512, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		let mut result: [u64; $n_qwords] = unsafe { ::core::mem::uninitialized() };
+		let self_t: &[u64; $n_qwords] = &$self_expr.0;
+		let other_t: &[u64; $n_qwords] = &$other.0;
 
 		let overflow: u8;
 
@@ -280,17 +280,17 @@ macro_rules! uint_overflowing_sub {
 		}
 		(U512(result), overflow != 0)
 	});
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_sub_reg!($name, $n_qwords, $self_expr, $other)
 	})
 }
 
 #[cfg(all(asm_available, target_arch="x86_64"))]
 macro_rules! uint_overflowing_mul {
-	(U256, $n_dwords: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_dwords] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_dwords] = &$self_expr.0;
-		let other_t: &[u64; $n_dwords] = &$other.0;
+	(U256, $n_qwords: expr, $self_expr: expr, $other: expr) => ({
+		let mut result: [u64; $n_qwords] = unsafe { ::core::mem::uninitialized() };
+		let self_t: &[u64; $n_qwords] = &$self_expr.0;
+		let other_t: &[u64; $n_qwords] = &$other.0;
 
 		let overflow: u64;
 		unsafe {
@@ -400,37 +400,37 @@ macro_rules! uint_overflowing_mul {
 		}
 		(U256(result), overflow > 0)
 	});
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => (
-		uint_overflowing_mul_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => (
+		uint_overflowing_mul_reg!($name, $n_qwords, $self_expr, $other)
 	)
 }
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_mul {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_mul_reg!($name, $n_dwords, $self_expr, $other)
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
+		uint_overflowing_mul_reg!($name, $n_qwords, $self_expr, $other)
 	})
 }
 
 macro_rules! uint_full_mul_reg {
-	($name:ident, $n_dwords:tt, $self_expr:expr, $other:expr) => (
+	($name:ident, $n_qwords:tt, $self_expr:expr, $other:expr) => (
 		uint_full_mul_reg!(
 			$name,
-			$n_dwords * 2,
-			$n_dwords,
-			$n_dwords,
+			$n_qwords * 2,
+			$n_qwords,
+			$n_qwords,
 			$self_expr,
-			$n_dwords,
+			$n_qwords,
 			$other
 		)
 	);
 	(
 		$name:ident,
-		$out_dwords:expr,
-		$n_dwords:tt,
-		$self_dwords:expr,
+		$out_qwords:expr,
+		$n_qwords:tt,
+		$self_qwords:expr,
 		$self_expr:expr,
-		$other_dwords:expr,
+		$other_qwords:expr,
 		$other:expr
 	) => ({{
 		#![allow(unused_assignments)]
@@ -438,19 +438,19 @@ macro_rules! uint_full_mul_reg {
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = [0u64; $out_dwords];
+		let mut ret = [0u64; $out_qwords];
 
 		unroll! {
-			for i in 0..$n_dwords {
+			for i in 0..$n_qwords {
 				// We rely on these if-statements being eliminated by the compiler for large numbers
-				// (numbers where log(me * you) base 2^64 > $n_dwords).
-				if i < $other_dwords {
+				// (numbers where log(me * you) base 2^64 > $n_qwords).
+				if i < $other_qwords {
 					let mut carry = 0u64;
 					let (b_u, b_l) = split(you[i]);
 
 					unroll! {
-						for j in 0..$n_dwords {
-							if j < $self_dwords {
+						for j in 0..$n_qwords {
+							if j < $self_qwords {
 								let a = split(me[j]);
 
 								// multiply parts
@@ -478,7 +478,7 @@ macro_rules! uint_full_mul_reg {
 	}})
 }
 
-macro_rules! num_dwords {
+macro_rules! num_qwords {
 	($arr:expr, 4) => {
 		if $arr[3] != 0 {
 			4
@@ -516,26 +516,26 @@ macro_rules! num_dwords {
 }
 
 macro_rules! uint_overflowing_mul_reg {
-	($name:ident, $n_dwords:tt, $self_expr: expr, $other: expr) => ({
+	($name:ident, $n_qwords:tt, $self_expr: expr, $other: expr) => ({
 		#![allow(unused_assignments)]
 
 		// This is a safe optimization, since it's based on basic logarithmic rules.
 		// `log(a * b) = log(a) + log(b)`. This specific scenario would be log base `2^64`
-		let ret: [u64; $n_dwords * 2] = uint_full_mul_reg!(
+		let ret: [u64; $n_qwords * 2] = uint_full_mul_reg!(
 			$name,
-			$n_dwords,
+			$n_qwords,
 			$self_expr,
 			$other
 		);
 
 		// The safety of this is enforced by the compiler
-		let ret: [[u64; $n_dwords]; 2] = unsafe { mem::transmute(ret) };
+		let ret: [[u64; $n_qwords]; 2] = unsafe { mem::transmute(ret) };
 
 		// The compiler WILL NOT inline this if you remove this annotation.
 		#[inline(always)]
-		fn any_nonzero(arr: &[u64; $n_dwords]) -> bool {
+		fn any_nonzero(arr: &[u64; $n_qwords]) -> bool {
 			unroll! {
-				for i in 0..$n_dwords {
+				for i in 0..$n_qwords {
 					if arr[i] != 0 {
 						return true;
 					}
@@ -591,11 +591,11 @@ fn split(a: u64) -> (u64, u64) {
 }
 
 macro_rules! construct_uint {
-	($name:ident, $n_dwords:tt) => (
+	($name:ident, $n_qwords:tt) => (
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-		pub struct $name(pub [u64; $n_dwords]);
+		pub struct $name(pub [u64; $n_qwords]);
 
 		impl $name {
 			/// Convert from a decimal string.
@@ -655,7 +655,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn as_u64(&self) -> u64 {
 				let &$name(ref arr) = self;
-				for i in 1..$n_dwords {
+				for i in 1..$n_qwords {
 					if arr[i] != 0 {
 						panic!("Integer overflow when casting U256")
 					}
@@ -667,7 +667,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn is_zero(&self) -> bool {
 				let &$name(ref arr) = self;
-				for i in 0..$n_dwords { if arr[i] != 0 { return false; } }
+				for i in 0..$n_qwords { if arr[i] != 0 { return false; } }
 				return true;
 			}
 
@@ -675,8 +675,8 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn bits(&self) -> usize {
 				let &$name(ref arr) = self;
-				for i in 1..$n_dwords {
-					if arr[$n_dwords - i] > 0 { return (0x40 * ($n_dwords - i + 1)) - arr[$n_dwords - i].leading_zeros() as usize; }
+				for i in 1..$n_qwords {
+					if arr[$n_qwords - i] > 0 { return (0x40 * ($n_qwords - i + 1)) - arr[$n_qwords - i].leading_zeros() as usize; }
 				}
 				0x40 - arr[0].leading_zeros() as usize
 			}
@@ -706,17 +706,17 @@ macro_rules! construct_uint {
 			/// Write to the slice in big-endian format.
 			#[inline]
 			pub fn to_big_endian(&self, bytes: &mut [u8]) {
-				debug_assert!($n_dwords * 8 == bytes.len());
-				for i in 0..$n_dwords {
-					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_dwords - i - 1]);
+				debug_assert!($n_qwords * 8 == bytes.len());
+				for i in 0..$n_qwords {
+					BigEndian::write_u64(&mut bytes[8 * i..], self.0[$n_qwords - i - 1]);
 				}
 			}
 
 			/// Write to the slice in little-endian format.
 			#[inline]
 			pub fn to_little_endian(&self, bytes: &mut [u8]) {
-				debug_assert!($n_dwords * 8 == bytes.len());
-				for i in 0..$n_dwords {
+				debug_assert!($n_qwords * 8 == bytes.len());
+				for i in 0..$n_qwords {
 					LittleEndian::write_u64(&mut bytes[8 * i..], self.0[i]);
 				}
 			}
@@ -729,7 +729,7 @@ macro_rules! construct_uint {
 				use rustc_hex::ToHex;;
 
 				if self.is_zero() { return "0".to_owned(); }	// special case.
-				let mut bytes = [0u8; 8 * $n_dwords];
+				let mut bytes = [0u8; 8 * $n_qwords];
 				self.to_big_endian(&mut bytes);
 				let bp7 = self.bits() + 7;
 				let len = cmp::max(bp7 / 8, 1);
@@ -765,8 +765,8 @@ macro_rules! construct_uint {
 			/// The maximum value which can be inhabited by this type.
 			#[inline]
 			pub fn max_value() -> Self {
-				let mut result = [0; $n_dwords];
-				for i in 0..$n_dwords {
+				let mut result = [0; $n_qwords];
+				for i in 0..$n_qwords {
 					result[i] = u64::max_value();
 				}
 				$name(result)
@@ -796,7 +796,7 @@ macro_rules! construct_uint {
 						y = x * y;
 						x = x * x;
 						// to reduce odd number by 1 we should just clear the last bit
-						n.0[$n_dwords-1] = n.0[$n_dwords-1] & ((!0u64)>>1);
+						n.0[$n_qwords-1] = n.0[$n_qwords-1] & ((!0u64)>>1);
 						n = n >> 1;
 					}
 				}
@@ -833,7 +833,7 @@ macro_rules! construct_uint {
 			/// Optimized instructions
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
-				uint_overflowing_add!($name, $n_dwords, self, other)
+				uint_overflowing_add!($name, $n_qwords, self, other)
 			}
 
 			/// Addition which saturates at the maximum value.
@@ -847,7 +847,7 @@ macro_rules! construct_uint {
 			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
-				uint_overflowing_sub!($name, $n_dwords, self, other)
+				uint_overflowing_sub!($name, $n_qwords, self, other)
 			}
 
 			/// Subtraction which saturates at zero.
@@ -861,7 +861,7 @@ macro_rules! construct_uint {
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
-				uint_overflowing_mul!($name, $n_dwords, self, other)
+				uint_overflowing_mul!($name, $n_qwords, self, other)
 			}
 
 			/// Multiplication which saturates at the maximum value..
@@ -899,11 +899,11 @@ macro_rules! construct_uint {
 			#[allow(dead_code)] // not used when multiplied with inline assembly
 			fn overflowing_mul_u32(self, other: u32) -> (Self, bool) {
 				let $name(ref arr) = self;
-				let mut ret = [0u64; $n_dwords];
+				let mut ret = [0u64; $n_qwords];
 				let mut carry = 0;
 				let o = other as u64;
 
-				for i in 0..$n_dwords {
+				for i in 0..$n_qwords {
 					let (res, carry2) = mul_u32(split(arr[i]), o, carry);
 					ret[i] = res;
 					carry = carry2;
@@ -916,11 +916,11 @@ macro_rules! construct_uint {
 			/// Can also be used as (&slice).into(), as it is default `From`
 			/// slice implementation for U256
 			pub fn from_big_endian(slice: &[u8]) -> Self {
-				assert!($n_dwords * 8 >= slice.len());
+				assert!($n_qwords * 8 >= slice.len());
 
-				let mut ret = [0; $n_dwords];
+				let mut ret = [0; $n_qwords];
 				unsafe {
-					let ret_u8: &mut [u8; $n_dwords * 8] = mem::transmute(&mut ret);
+					let ret_u8: &mut [u8; $n_qwords * 8] = mem::transmute(&mut ret);
 					let mut ret_ptr = ret_u8.as_mut_ptr();
 					let mut slice_ptr = slice.as_ptr().offset(slice.len() as isize - 1);
 					for _ in 0..slice.len() {
@@ -935,11 +935,11 @@ macro_rules! construct_uint {
 
 			/// Converts from little endian representation bytes in memory
 			pub fn from_little_endian(slice: &[u8]) -> Self {
-				assert!($n_dwords * 8 >= slice.len());
+				assert!($n_qwords * 8 >= slice.len());
 
-				let mut ret = [0; $n_dwords];
+				let mut ret = [0; $n_qwords];
 				unsafe {
-					let ret_u8: &mut [u8; $n_dwords * 8] = mem::transmute(&mut ret);
+					let ret_u8: &mut [u8; $n_qwords * 8] = mem::transmute(&mut ret);
 					ret_u8[0..slice.len()].copy_from_slice(&slice);
 				}
 
@@ -955,7 +955,7 @@ macro_rules! construct_uint {
 
 		impl From<u64> for $name {
 			fn from(value: u64) -> $name {
-				let mut ret = [0; $n_dwords];
+				let mut ret = [0; $n_qwords];
 				ret[0] = value;
 				$name(ret)
 			}
@@ -1044,7 +1044,7 @@ macro_rules! construct_uint {
 			fn div(self, other: $name) -> $name {
 				let mut sub_copy = self;
 				let mut shift_copy = other;
-				let mut ret = [0u64; $n_dwords];
+				let mut ret = [0u64; $n_qwords];
 
 				let my_bits = self.bits();
 				let your_bits = other.bits();
@@ -1090,8 +1090,8 @@ macro_rules! construct_uint {
 			fn bitand(self, other: $name) -> $name {
 				let $name(ref arr1) = self;
 				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_dwords];
-				for i in 0..$n_dwords {
+				let mut ret = [0u64; $n_qwords];
+				for i in 0..$n_qwords {
 					ret[i] = arr1[i] & arr2[i];
 				}
 				$name(ret)
@@ -1105,8 +1105,8 @@ macro_rules! construct_uint {
 			fn bitxor(self, other: $name) -> $name {
 				let $name(ref arr1) = self;
 				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_dwords];
-				for i in 0..$n_dwords {
+				let mut ret = [0u64; $n_qwords];
+				for i in 0..$n_qwords {
 					ret[i] = arr1[i] ^ arr2[i];
 				}
 				$name(ret)
@@ -1120,8 +1120,8 @@ macro_rules! construct_uint {
 			fn bitor(self, other: $name) -> $name {
 				let $name(ref arr1) = self;
 				let $name(ref arr2) = other;
-				let mut ret = [0u64; $n_dwords];
-				for i in 0..$n_dwords {
+				let mut ret = [0u64; $n_qwords];
+				for i in 0..$n_qwords {
 					ret[i] = arr1[i] | arr2[i];
 				}
 				$name(ret)
@@ -1134,8 +1134,8 @@ macro_rules! construct_uint {
 			#[inline]
 			fn not(self) -> $name {
 				let $name(ref arr) = self;
-				let mut ret = [0u64; $n_dwords];
-				for i in 0..$n_dwords {
+				let mut ret = [0u64; $n_qwords];
+				for i in 0..$n_qwords {
 					ret[i] = !arr[i];
 				}
 				$name(ret)
@@ -1148,17 +1148,17 @@ macro_rules! construct_uint {
             #[inline]
 			fn shl(self, shift: usize) -> $name {
 				let $name(ref original) = self;
-				let mut ret = [0u64; $n_dwords];
+				let mut ret = [0u64; $n_qwords];
 				let word_shift = shift / 64;
 				let bit_shift = shift % 64;
 
 				// shift
-				for i in word_shift..$n_dwords {
+				for i in word_shift..$n_qwords {
 					ret[i] = original[i - word_shift] << bit_shift;
 				}
 				// carry
 				if bit_shift > 0 {
-					for i in word_shift+1..$n_dwords {
+					for i in word_shift+1..$n_qwords {
 						ret[i] += original[i - 1 - word_shift] >> (64 - bit_shift);
 					}
 				}
@@ -1172,18 +1172,18 @@ macro_rules! construct_uint {
             #[inline]
 			fn shr(self, shift: usize) -> $name {
 				let $name(ref original) = self;
-				let mut ret = [0u64; $n_dwords];
+				let mut ret = [0u64; $n_qwords];
 				let word_shift = shift / 64;
 				let bit_shift = shift % 64;
 
 				// shift
-				for i in word_shift..$n_dwords {
+				for i in word_shift..$n_qwords {
 					ret[i - word_shift] = original[i] >> bit_shift;
 				}
 
 				// Carry
 				if bit_shift > 0 {
-					for i in word_shift+1..$n_dwords {
+					for i in word_shift+1..$n_qwords {
 						ret[i - word_shift - 1] += original[i] << (64 - bit_shift);
 					}
 				}
@@ -1196,7 +1196,7 @@ macro_rules! construct_uint {
 			fn cmp(&self, other: &$name) -> ::core::cmp::Ordering {
 				let &$name(ref me) = self;
 				let &$name(ref you) = other;
-				let mut i = $n_dwords;
+				let mut i = $n_qwords;
 				while i > 0 {
 					i -= 1;
 					if me[i] < you[i] { return ::core::cmp::Ordering::Less; }
