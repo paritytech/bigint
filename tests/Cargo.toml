@@ -1,0 +1,10 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["debris <marek.kotewicz@gmail.com>"]
+
+[dependencies]
+crunchy = "0.1.5"
+ethereum-types = { path ="../ethereum-types", features = ["std", "heapsizeof"] }
+quickcheck = "0.4"
+uint = { path = "../uint" }

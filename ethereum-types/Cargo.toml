@@ -1,0 +1,13 @@
+[package]
+name = "ethereum-types"
+version = "0.1.0"
+authors = ["debris <marek.kotewicz@gmail.com>"]
+
+[dependencies]
+uint = { path = "../uint", version = "0.1" }
+fixed-hash = { path = "../fixed-hash", version = "0.1" }
+crunchy = "0.1.5"
+
+[features]
+std = ["uint/std", "fixed-hash/std"]
+heapsizeof = ["uint/heapsizeof", "fixed-hash/heapsizeof"]
