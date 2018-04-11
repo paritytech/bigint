@@ -6,12 +6,25 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate rustc_version;
+#[cfg(feature = "cc")]
+mod inner {
+	extern crate cc;
 
-use rustc_version::{version_meta, Channel};
+	pub fn main() {
+		cc::Build::new()
+			.file("./bigint-asm/u256.c")
+			.opt_level(3)
+			.static_flag(true)
+			.compile("u256");
+	}
+}
+
+#[cfg(not(feature = "cc"))]
+mod inner {
+	pub fn main() {
+	}
+}
 
 fn main() {
-	if let Channel::Nightly = version_meta().unwrap().channel {
-		println!("cargo:rustc-cfg=asm_available");
-	}
+	inner::main()
 }

@@ -8,8 +8,6 @@
 
 //! Efficient large, fixed-size big integers and hashes.
 
-#![cfg_attr(asm_available, feature(asm))]
-
 #![cfg_attr(not(feature="std"), no_std)]
 
 extern crate byteorder;
