@@ -54,7 +54,6 @@ macro_rules! impl_map_from {
 	}
 }
 
-#[cfg(not(all(feature = "asm", target_arch = "x86_64")))]
 macro_rules! uint_overflowing_add {
 	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
@@ -71,29 +70,6 @@ macro_rules! uint_overflowing_add_reg {
 			u64::overflowing_add
 		)
 	})
-}
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-extern "C" {
-	fn u256add(first: *mut u64, second: *const u64) -> u8;
-	fn u256mul(first: *const u64, second: *const u64, out: *mut u64) -> u64;
-}
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-macro_rules! uint_overflowing_add {
-	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
-		let mut self_t: [u64; $n_words] = $self_expr.0;
-		let other_t: [u64; $n_words] = $other.0;
-
-		let overflow: bool = unsafe {
-			u256add(self_t.as_mut_ptr(), other_t.as_ptr()) != 0
-		};
-		(U256(self_t), overflow)
-	});
-
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
-		uint_overflowing_add_reg!($name, $n_words, $self_expr, $other)
-	)
 }
 
 #[cfg(not(all(asm_available, target_arch="x86_64")))]
@@ -240,7 +216,7 @@ macro_rules! uint_overflowing_mul {
 		let other_t: [u64; $n_words] = $other.0;
 
 	let overflow: u64 = unsafe {
-		u256mul(self_t.as_ptr(), other_t.as_ptr(), result.as_mut_ptr())
+		::ffi::u256mul(self_t.as_ptr(), other_t.as_ptr(), result.as_mut_ptr())
 	};
 
 		(U256(result), overflow > 0)

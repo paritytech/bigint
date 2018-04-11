@@ -1,9 +1,6 @@
 #include <stdint.h>
 
-uint8_t u256add(
-                      uint64_t *first,
-                      uint64_t *second
-                      ) {
+uint8_t u256add(uint64_t *first, uint64_t *second) {
   uint8_t overflow;
 
   asm (
@@ -23,11 +20,7 @@ uint8_t u256add(
   return overflow;
 }
 
-uint64_t u256mul(
-                      uint64_t *first,
-                      uint64_t *second,
-                      uint64_t *out
-                      ) {
+uint64_t u256mul(uint64_t *first, uint64_t *second, uint64_t *out) {
   register uint64_t overflow asm("rcx");
   uint64_t result0, result1, result2, result3;
 

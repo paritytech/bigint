@@ -25,9 +25,14 @@ extern crate heapsize;
 #[cfg(feature="std")]
 extern crate core;
 
-#[cfg(test)]
+#[cfg(all(feature = "std", test))]
 #[macro_use]
 extern crate quickcheck;
 
 pub mod uint;
 pub use ::uint::*;
+
+mod ffi {
+    include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
+}
+
