@@ -22,7 +22,7 @@ uint8_t u256add(uint64_t *first, uint64_t *second) {
 
 uint64_t u256mul(uint64_t *first, uint64_t *second, uint64_t *out) {
   register uint64_t overflow asm("rcx");
-  uint64_t result0, result1, result2, result3;
+  uint64_t result[4];
 
   // TODO: Could use movcc instead of jumpcc?
   asm (
@@ -117,10 +117,10 @@ uint64_t u256mul(uint64_t *first, uint64_t *second, uint64_t *out) {
     "movq %6, %%rcx\n  "
 
     "2:\n  "
-    : /* %0 */ "=&r"(result0),
-      /* %1 */ "=&r"(result1),
-      /* %2 */ "=&r"(result2),
-      /* %3 */ "=&r"(result3)
+    : /* %0 */ "=&r"(result[0]),
+      /* %1 */ "=&r"(result[1]),
+      /* %2 */ "=&r"(result[2]),
+      /* %3 */ "=&r"(result[3])
     : /* %4 */ "r"(first[0]),
       /* %5 */ "r"(first[1]),
       /* %6 */ "r"(first[2]),
@@ -132,10 +132,10 @@ uint64_t u256mul(uint64_t *first, uint64_t *second, uint64_t *out) {
       /* %11 */ "r"(second[3])
     : "rax", "rdx", "rcx");
 
-  out[0] = result0;
-  out[1] = result1;
-  out[2] = result2;
-  out[3] = result3;
+  out[0] = result[0];
+  out[1] = result[1];
+  out[2] = result[2];
+  out[3] = result[3];
 
   return overflow;
 }
