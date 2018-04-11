@@ -18,11 +18,12 @@ mod inner {
 
 	pub fn main() {
 		use std::io::Write;
+		use std::fs::File;
+		use std::env;
+		use std::collections::hash_map::DefaultHasher;
+		use std::hash::{Hash, Hasher};
 
 		let identifier = {
-			use std::collections::hash_map::DefaultHasher;
-			use std::hash::{Hash, Hasher};
-
 			let mut hasher = DefaultHasher::new();
 			env!("CARGO_PKG_VERSION").hash(&mut hasher);
 			hasher.finish().to_string()
@@ -31,6 +32,7 @@ mod inner {
 		let mut builder = cc::Build::new();
 		builder
 			.file("./bigint-asm/u256.c")
+			.flag_if_supported("-march=native")
 			.opt_level(3)
 			.static_flag(true);
 
@@ -41,13 +43,13 @@ mod inner {
 			builder.define(def.0, Some(def.1.as_ref()));
 		}
 
-		let mut out = ::std::fs::File::create(format!(
+		let mut out = File::create(format!(
 			"{}/{}",
-			::std::env::var("OUT_DIR").unwrap(),
+			env::var("OUT_DIR").unwrap(),
 			"/ffi.rs"
 		)).unwrap();
 
-    // TODO: Use bindgen?
+		// TODO: Use bindgen?
 		write!(
 			out,
 			r#"
