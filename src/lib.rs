@@ -32,6 +32,7 @@ extern crate quickcheck;
 pub mod uint;
 pub use ::uint::*;
 
+#[cfg(feature = "asm")]
 mod ffi {
     include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
 }
