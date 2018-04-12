@@ -21,116 +21,117 @@ uint8_t u256add(uint64_t *first, uint64_t *second) {
 }
 
 uint64_t u256mul(uint64_t *first, uint64_t *second, uint64_t *out) {
-  register uint64_t overflow asm("rcx");
+  uint64_t overflow;
   uint64_t result[4];
 
   // TODO: Could use movcc instead of jumpcc?
   asm (
-    "movq %4, %%rax\n  "
-    "mulq %8\n  "
-    "movq %%rax, %0\n  "
-    "movq %%rdx, %1\n  "
-
-    "movq %4, %%rax\n  "
+    "mov %5, %%rax\n  "
     "mulq %9\n  "
-    "addq %%rax, %1\n  "
-    "adcq $0, %%rdx\n  "
-    "movq %%rdx, %2\n  "
+    "mov %%rax, %1\n  "
+    "mov %%rdx, %2\n  "
 
-    "movq %4, %%rax\n  "
+    "mov %5, %%rax\n  "
     "mulq %10\n  "
-    "addq %%rax, %2\n  "
-    "adcq $0, %%rdx\n  "
-    "movq %%rdx, %3\n  "
+    "add %%rax, %2\n  "
+    "adc $0, %%rdx\n  "
+    "mov %%rdx, %3\n  "
 
-    "movq %4, %%rax\n  "
+    "mov %5, %%rax\n  "
     "mulq %11\n  "
-    "addq %%rax, %3\n  "
-    "adcq $0, %%rdx\n  "
-    "movq %%rdx, %%rcx\n  "
+    "add %%rax, %3\n  "
+    "adc $0, %%rdx\n  "
+    "mov %%rdx, %4\n  "
 
-    "movq %5, %%rax\n  "
-    "mulq %8\n  "
-    "addq %%rax, %1\n  "
-    "adcq %%rdx, %2\n  "
-    "adcq $0, %3\n  "
-    "adcq $0, %%rcx\n  "
+    "mov %5, %%rax\n  "
+    "mulq %12\n  "
+    "add %%rax, %4\n  "
+    "adc $0, %%rdx\n  "
+    "mov %%rdx, %0\n  "
 
-    "movq %5, %%rax\n  "
+    "mov %6, %%rax\n  "
     "mulq %9\n  "
-    "addq %%rax, %2\n  "
-    "adcq %%rdx, %3\n  "
-    "adcq $0, %%rcx\n  "
-    "adcq $0, %3\n  "
-    "adcq $0, %%rcx\n  "
+    "add %%rax, %2\n  "
+    "adc %%rdx, %3\n  "
+    "adc $0, %4\n  "
+    "adc $0, %0\n  "
 
-    "movq %5, %%rax\n  "
+    "mov %6, %%rax\n  "
     "mulq %10\n  "
-    "addq %%rax, %3\n  "
-    "adcq $0, %%rdx\n  "
-    "orq %%rdx, %%rcx\n  "
+    "add %%rax, %3\n  "
+    "adc %%rdx, %4\n  "
+    "adc $0, %0\n  "
+    "adc $0, %4\n  "
+    "adc $0, %0\n  "
 
-    "movq %6, %%rax\n  "
-    "mulq %8\n  "
-    "addq %%rax, %2\n  "
-    "adcq %%rdx, %3\n  "
-    "adcq $0, %%rcx\n  "
+    "mov %6, %%rax\n  "
+    "mulq %11\n  "
+    "add %%rax, %4\n  "
+    "adc $0, %%rdx\n  "
+    "or %%rdx, %0\n  "
 
-    "movq %6, %%rax\n  "
+    "mov %7, %%rax\n  "
     "mulq %9\n  "
-    "addq %%rax, %3\n  "
-    "adcq $0, %%rdx\n  "
-    "orq %%rdx, %%rcx\n  "
+    "add %%rax, %3\n  "
+    "adc %%rdx, %4\n  "
+    "adc $0, %0\n  "
 
-    "movq %7, %%rax\n  "
-    "mulq %8\n  "
-    "addq %%rax, %3\n  "
-    "orq %%rdx, %%rcx\n  "
+    "mov %7, %%rax\n  "
+    "mulq %10\n  "
+    "add %%rax, %4\n  "
+    "adc $0, %%rdx\n  "
+    "or %%rdx, %0\n  "
 
-    "cmpq $0, %%rcx\n  "
+    "mov %8, %%rax\n  "
+    "mulq %9\n  "
+    "add %%rax, %4\n  "
+    "or %%rdx, %0\n  "
+
+    "cmpq $0, %0\n  "
     "jne 2f\n  "
 
-    "movq %7, %%rcx\n  "
+    "mov %8, %0\n  "
     "jrcxz 12f\n  "
 
-    "movq %11, %%rcx\n  "
-    "movq %10, %%rax\n  "
-    "orq %%rax, %%rcx\n  "
-    "movq %9, %%rax\n  "
-    "orq %%rax, %%rcx\n  "
+    "mov %12, %0\n  "
+    "mov %11, %%rax\n  "
+    "or %%rax, %0\n  "
+    "mov %10, %%rax\n  "
+    "or %%rax, %0\n  "
     "jmp 2f\n  "
 
     "12:\n  "
-    "movq %11, %%rcx\n  "
+    "mov %12, %0\n  "
     "jrcxz 11f\n  "
 
-    "movq %6, %%rcx\n  "
-    "movq %5, %%rax\n  "
-    "or %%rax, %%rcx\n  "
+    "mov %7, %0\n  "
+    "mov %6, %%rax\n  "
+    "or %%rax, %0\n  "
 
-    "cmpq $0, %%rcx\n  "
+    "cmpq $0, %0\n  "
     "jne 2f\n  "
 
     "11:\n  "
-    "movq %10, %%rcx\n  "
+    "mov %11, %0\n  "
     "jrcxz 2f\n  "
-    "movq %6, %%rcx\n  "
+    "mov %7, %0\n  "
 
     "2:\n  "
-    : /* %0 */ "=&r"(result[0]),
-      /* %1 */ "=&r"(result[1]),
-      /* %2 */ "=&r"(result[2]),
-      /* %3 */ "=&r"(result[3])
-    : /* %4 */ "r"(first[0]),
-      /* %5 */ "r"(first[1]),
-      /* %6 */ "r"(first[2]),
-      /* %7 */ "r"(first[3]),
+    : /* %0 */ "=r"(overflow),
+      /* %1 */ "=&r"(result[0]),
+      /* %2 */ "=&r"(result[1]),
+      /* %3 */ "=&r"(result[2]),
+      /* %4 */ "=&r"(result[3])
+    : /* %5 */ "r"(first[0]),
+      /* %6 */ "r"(first[1]),
+      /* %7 */ "r"(first[2]),
+      /* %8 */ "r"(first[3]),
 
-      /* %8 */ "r"(second[0]),
-      /* %9 */ "r"(second[1]),
-      /* %10 */ "r"(second[2]),
-      /* %11 */ "r"(second[3])
-    : "rax", "rdx", "rcx");
+      /* %9 */ "r"(second[0]),
+      /* %10 */ "r"(second[1]),
+      /* %11 */ "r"(second[2]),
+      /* %12 */ "r"(second[3])
+    : "rax", "rdx");
 
   out[0] = result[0];
   out[1] = result[1];
