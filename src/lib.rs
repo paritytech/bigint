@@ -8,8 +8,6 @@
 
 //! Efficient large, fixed-size big integers and hashes.
 
-#![cfg_attr(asm_available, feature(asm))]
-
 #![cfg_attr(not(feature="std"), no_std)]
 
 extern crate byteorder;
@@ -27,9 +25,15 @@ extern crate heapsize;
 #[cfg(feature="std")]
 extern crate core;
 
-#[cfg(test)]
+#[cfg(all(feature = "std", test))]
 #[macro_use]
 extern crate quickcheck;
 
 pub mod uint;
 pub use ::uint::*;
+
+#[cfg(feature = "asm")]
+mod ffi {
+    include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
+}
+
