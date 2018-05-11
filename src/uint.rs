@@ -139,7 +139,13 @@ macro_rules! uint_overflowing_mul {
 }
 
 macro_rules! uint_full_mul_reg {
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => ({{
+	($name:ident, 8, $self_expr:expr, $other:expr) => {
+		uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
+	};
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => {
+		uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
+	};
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => ({{
 		#![allow(unused_assignments)]
 
 		let $name(ref me) = $self_expr;
@@ -153,7 +159,7 @@ macro_rules! uint_full_mul_reg {
 
 				unroll! {
 					for j in 0..$n_words {
-						if me[j] != 0 || carry != 0 {
+						if $check(me[j], carry) {
 							let a = me[j];
 
 							let (hi, low) = split_u128(a as u128 * b as u128);
@@ -181,7 +187,7 @@ macro_rules! uint_full_mul_reg {
 		}
 
 		ret
-	}})
+	}});
 }
 
 macro_rules! uint_overflowing_mul_reg {
