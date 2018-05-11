@@ -13,7 +13,6 @@
 //! ```
 
 #![feature(test)]
-#![feature(asm)]
 
 extern crate test;
 extern crate bigint;
