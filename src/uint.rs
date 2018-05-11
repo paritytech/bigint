@@ -33,7 +33,6 @@ use core::{str, mem};
 use core::ops::{Shr, Shl, BitAnd, BitOr, BitXor, Not, Div, Rem, Mul, Add, Sub};
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
-//use rustc_hex::{ToHex, FromHex, FromHexError};
 
 /// Conversion from decimal string error
 #[derive(Debug, PartialEq)]
@@ -72,7 +71,6 @@ macro_rules! uint_overflowing_add_reg {
 	})
 }
 
-#[cfg(not(all(asm_available, target_arch="x86_64")))]
 macro_rules! uint_overflowing_sub {
 	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
@@ -134,99 +132,6 @@ macro_rules! uint_overflowing_sub_reg {
 	})
 }
 
-#[cfg(all(asm_available, target_arch="x86_64"))]
-macro_rules! uint_overflowing_sub {
-	(U256, $n_words:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
-
-		let overflow: u8;
-		unsafe {
-			asm!("
-				sub $9, $0
-				sbb $10, $1
-				sbb $11, $2
-				sbb $12, $3
-				setb %al
-				"
-				: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]), "={al}"(overflow)
-				: "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]), "mr"(other_t[0]), "mr"(other_t[1]), "mr"(other_t[2]), "mr"(other_t[3])
-				:
-				:
-			);
-		}
-		(U256(result), overflow != 0)
-	});
-	(U512, $n_words:tt, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
-		let self_t: &[u64; $n_words] = &$self_expr.0;
-		let other_t: &[u64; $n_words] = &$other.0;
-
-		let overflow: u8;
-
-		unsafe {
-			asm!("
-				sub $15, $0
-				sbb $16, $1
-				sbb $17, $2
-				sbb $18, $3
-				lodsq
-				sbb $19, %rax
-				stosq
-				lodsq
-				sbb $20, %rax
-				stosq
-				lodsq
-				sbb $21, %rax
-				stosq
-				lodsq
-				sbb $22, %rax
-				stosq
-				setb %al
-				"
-			: "=r"(result[0]), "=r"(result[1]), "=r"(result[2]), "=r"(result[3]),
-
-			  "={al}"(overflow) /* $0 - $4 */
-
-			: "{rdi}"(&result[4] as *const u64) /* $5 */
-		 	 "{rsi}"(&self_t[4] as *const u64) /* $6 */
-			  "0"(self_t[0]), "1"(self_t[1]), "2"(self_t[2]), "3"(self_t[3]),
-			  "m"(self_t[4]), "m"(self_t[5]), "m"(self_t[6]), "m"(self_t[7]),
-			  /* $7 - $14 */
-
-			  "m"(other_t[0]), "m"(other_t[1]), "m"(other_t[2]), "m"(other_t[3]),
-			  "m"(other_t[4]), "m"(other_t[5]), "m"(other_t[6]), "m"(other_t[7]) /* $15 - $22 */
-			: "rdi", "rsi"
-			:
-			);
-		}
-		(U512(result), overflow != 0)
-	});
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
-		uint_overflowing_sub_reg!($name, $n_words, $self_expr, $other)
-	})
-}
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-macro_rules! uint_overflowing_mul {
-	(U256, $n_words: expr, $self_expr: expr, $other: expr) => ({
-		let mut result: [u64; $n_words] = unsafe { ::core::mem::uninitialized() };
-		let self_t: [u64; $n_words] = $self_expr.0;
-		let other_t: [u64; $n_words] = $other.0;
-
-	let overflow: u64 = unsafe {
-		::ffi::u256mul(self_t.as_ptr(), other_t.as_ptr(), result.as_mut_ptr())
-	};
-
-		(U256(result), overflow > 0)
-	});
-	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => (
-		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
-	)
-}
-
-#[cfg(not(all(feature = "asm", target_arch = "x86_64")))]
 macro_rules! uint_overflowing_mul {
 	($name:ident, $n_words:tt, $self_expr: expr, $other: expr) => ({
 		uint_overflowing_mul_reg!($name, $n_words, $self_expr, $other)
@@ -234,37 +139,47 @@ macro_rules! uint_overflowing_mul {
 }
 
 macro_rules! uint_full_mul_reg {
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => ({{
+	($name:ident, 8, $self_expr:expr, $other:expr) => {
+		uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
+	};
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => {
+		uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
+	};
+	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => ({{
 		#![allow(unused_assignments)]
 
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
-		let mut ret = [0u64; 2*$n_words];
+		let mut ret = [0u64; $n_words * 2];
 
 		unroll! {
 			for i in 0..$n_words {
 				let mut carry = 0u64;
-				let (b_u, b_l) = split(you[i]);
+				let b = you[i];
 
 				unroll! {
 					for j in 0..$n_words {
-						if me[j] != 0 || carry != 0 {
-							let a = split(me[j]);
+						if $check(me[j], carry) {
+							let a = me[j];
 
-							// multiply parts
-							let (c_l, overflow_l) = mul_u32(a, b_l, ret[i + j]);
-							let (c_u, overflow_u) = mul_u32(a, b_u, c_l >> 32);
-							ret[i + j] = (c_l & 0xFFFFFFFF) + (c_u << 32);
+							let (hi, low) = split_u128(a as u128 * b as u128);
 
-							// No overflow here
-							let res = (c_u >> 32) + (overflow_u << 32);
-							// possible overflows
-							let (res, o1) = res.overflowing_add(overflow_l + carry);
-							let (res, o2) = res.overflowing_add(ret[i + j + 1]);
-							ret[i + j + 1] = res;
+							let overflow = {
+								let existing_low = &mut ret[i + j];
+								let (low, o) = low.overflowing_add(*existing_low);
+								*existing_low = low;
+								o
+							};
 
-							// Only single overflow possible there
-							carry = (o1 | o2) as u64;
+							carry = {
+								let existing_hi = &mut ret[i + j + 1];
+								let hi = hi + overflow as u64;
+								let (hi, o0) = hi.overflowing_add(carry);
+								let (hi, o1) = hi.overflowing_add(*existing_hi);
+								*existing_hi = hi;
+
+								(o0 | o1) as u64
+							}
 						}
 					}
 				}
@@ -272,7 +187,7 @@ macro_rules! uint_full_mul_reg {
 		}
 
 		ret
-	}})
+	}});
 }
 
 macro_rules! uint_overflowing_mul_reg {
@@ -339,6 +254,11 @@ fn mul_u32(a: (u64, u64), b: u64, carry: u64) -> (u64, u64) {
 #[inline(always)]
 fn split(a: u64) -> (u64, u64) {
 	(a >> 32, a & 0xFFFFFFFF)
+}
+
+#[inline(always)]
+fn split_u128(a: u128) -> (u64, u64) {
+	((a >> 64) as _, (a & 0xFFFFFFFFFFFFFFFF) as _)
 }
 
 macro_rules! construct_uint {
@@ -509,7 +429,7 @@ macro_rules! construct_uint {
 				use core::cmp;
 				use rustc_hex::ToHex;;
 
-				if self.is_zero() { return "0".to_owned(); }	// special case.
+				if self.is_zero() { return "0".to_owned(); } // special case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
 				let bp7 = self.bits() + 7;
@@ -1051,147 +971,7 @@ construct_uint!(U512, 8);
 impl U256 {
 	/// Multiplies two 256-bit integers to produce full 512-bit integer
 	/// No overflow possible
-	#[cfg(all(asm_available, target_arch="x86_64"))]
-	pub fn full_mul(self, other: U256) -> U512 {
-		let self_t: &[u64; 4] = &self.0;
-		let other_t: &[u64; 4] = &other.0;
-		let mut result: [u64; 8] = unsafe { ::core::mem::uninitialized() };
-		unsafe {
-			asm!("
-				mov $8, %rax
-				mulq $12
-				mov %rax, $0
-				mov %rdx, $1
-
-				mov $8, %rax
-				mulq $13
-				add %rax, $1
-				adc $$0, %rdx
-				mov %rdx, $2
-
-				mov $8, %rax
-				mulq $14
-				add %rax, $2
-				adc $$0, %rdx
-				mov %rdx, $3
-
-				mov $8, %rax
-				mulq $15
-				add %rax, $3
-				adc $$0, %rdx
-				mov %rdx, $4
-
-				mov $9, %rax
-				mulq $12
-				add %rax, $1
-				adc %rdx, $2
-				adc $$0, $3
-				adc $$0, $4
-				xor $5, $5
-				adc $$0, $5
-				xor $6, $6
-				adc $$0, $6
-				xor $7, $7
-				adc $$0, $7
-
-				mov $9, %rax
-				mulq $13
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $9, %rax
-				mulq $14
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $9, %rax
-				mulq $15
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $10, %rax
-				mulq $12
-				add %rax, $2
-				adc %rdx, $3
-				adc $$0, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $10, %rax
-				mulq $13
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $10, %rax
-				mulq $14
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $10, %rax
-				mulq $15
-				add %rax, $5
-				adc %rdx, $6
-				adc $$0, $7
-
-				mov $11, %rax
-				mulq $12
-				add %rax, $3
-				adc %rdx, $4
-				adc $$0, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $11, %rax
-				mulq $13
-				add %rax, $4
-				adc %rdx, $5
-				adc $$0, $6
-				adc $$0, $7
-
-				mov $11, %rax
-				mulq $14
-				add %rax, $5
-				adc %rdx, $6
-				adc $$0, $7
-
-				mov $11, %rax
-				mulq $15
-				add %rax, $6
-				adc %rdx, $7
-				"
-            : /* $0 */ "={r8}"(result[0]), /* $1 */ "={r9}"(result[1]), /* $2 */ "={r10}"(result[2]),
-			  /* $3 */ "={r11}"(result[3]), /* $4 */ "={r12}"(result[4]), /* $5 */ "={r13}"(result[5]),
-			  /* $6 */ "={r14}"(result[6]), /* $7 */ "={r15}"(result[7])
-
-            : /* $8 */ "m"(self_t[0]), /* $9 */ "m"(self_t[1]), /* $10 */  "m"(self_t[2]),
-			  /* $11 */ "m"(self_t[3]), /* $12 */ "m"(other_t[0]), /* $13 */ "m"(other_t[1]),
-			  /* $14 */ "m"(other_t[2]), /* $15 */ "m"(other_t[3])
-			: "rax", "rdx"
-			:
-			);
-		}
-		U512(result)
-	}
-
-	/// Multiplies two 256-bit integers to produce full 512-bit integer
-	/// No overflow possible
 	#[inline(always)]
-	#[cfg(not(all(asm_available, target_arch="x86_64")))]
 	pub fn full_mul(self, other: U256) -> U512 {
 		U512(uint_full_mul_reg!(U256, 4, self, other))
 	}
@@ -2384,6 +2164,35 @@ mod tests {
 		uint_arbitrary!(U256, 32);
 		uint_arbitrary!(U512, 64);
 
+		macro_rules! o_try {
+			($o:expr) => {{
+				let (val, o) = $o;
+				if o { return ::quickcheck::TestResult::discard(); }
+				val
+			}};
+		}
+
+		macro_rules! try_expr {
+			($any:ident) => { $any };
+			($first:ident + $($second:tt)*) => {
+				o_try!($first.overflowing_add(try_expr!($($second)*)))
+			};
+			(($($anything:tt)*)) => {
+				try_expr!($($anything)*)
+			};
+			($first:ident * $($second:tt)*) => {
+				o_try!($first.overflowing_mul(try_expr!($($second)*)))
+			};
+			(($($first:tt)*) + $($rest:tt)*) => {{
+				let first = try_expr!($($first)*);
+				try_expr!(first + $($rest)*)
+			}};
+			(($($first:tt)*) * $($rest:tt)*) => {{
+				let first = try_expr!($($first)*);
+				try_expr!(first * $($rest)*)
+			}};
+		}
+
 		macro_rules! uint_laws {
 			($mod_name:ident, $uint_ty:ident) => {
 				mod $mod_name {
@@ -2392,48 +2201,33 @@ mod tests {
 
 					quickcheck! {
 						fn associative_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
-							if x.overflowing_add(y).1 || y.overflowing_add(z).1 || (x + y).overflowing_add(z).1 {
-								return TestResult::discard();
-							}
-
 							TestResult::from_bool(
-								(x + y) + z == x + (y + z)
+								try_expr!((x + y) + z) ==
+									try_expr!(x + (y + z))
 							)
 						}
 					}
 
 					quickcheck! {
 						fn associative_mul(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
-							if x.overflowing_mul(y).1 || y.overflowing_mul(z).1 || (x * y).overflowing_mul(z).1 {
-								return TestResult::discard();
-							}
-
 							TestResult::from_bool(
-								(x * y) * z == x * (y * z)
+								try_expr!((x * y) * z) == try_expr!(x * (y * z))
 							)
 						}
 					}
 
 					quickcheck! {
 						fn commutative_add(x: $uint_ty, y: $uint_ty) -> TestResult {
-							if x.overflowing_add(y).1 {
-								return TestResult::discard();
-							}
-
 							TestResult::from_bool(
-								x + y == y + x
+								try_expr!(x + y) == try_expr!(y + x)
 							)
 						}
 					}
 
 					quickcheck! {
 						fn commutative_mul(x: $uint_ty, y: $uint_ty) -> TestResult {
-							if x.overflowing_mul(y).1 {
-								return TestResult::discard();
-							}
-
 							TestResult::from_bool(
-								x * y == y * x
+								try_expr!(x * y) == try_expr!(y * x)
 							)
 						}
 					}
@@ -2476,48 +2270,46 @@ mod tests {
 
 					quickcheck! {
 						fn distributive_mul_over_add(x: $uint_ty, y: $uint_ty, z: $uint_ty) -> TestResult {
-							if y.overflowing_add(z).1 || x.overflowing_mul(y + z).1 || x.overflowing_add(y).1 || (x + y).overflowing_mul(z).1 {
-								return TestResult::discard();
-							}
-
 							TestResult::from_bool(
-								(x * (y + z) == (x * y + x * z)) && (((x + y) * z) == (x * z + y * z))
+								try_expr!(x * (y + z)) == try_expr!((x * y) + (x * z)) &&
+									try_expr!((x + y) * z) == try_expr!((x * z) + (y * z))
 							)
 						}
 					}
 
 					quickcheck! {
 						fn pow_mul(x: $uint_ty) -> TestResult {
-							if x.overflowing_pow($uint_ty::from(2)).1 || x.overflowing_pow($uint_ty::from(3)).1 {
-								return TestResult::discard();
-							}
+							let (p2, o) = x.overflowing_pow($uint_ty::from(2));
+							if o { return TestResult::discard(); }
+							let (p3, o) = x.overflowing_pow($uint_ty::from(3));
+							if o { return TestResult::discard(); }
 
 							TestResult::from_bool(
-								x.pow($uint_ty::from(2)) == x * x && x.pow($uint_ty::from(3)) == x * x * x
+								p2 == x * x && p3 == x * x * x
 							)
 						}
 					}
 
 					quickcheck! {
 						fn add_increases(x: $uint_ty, y: $uint_ty) -> TestResult {
-							if y.is_zero() || x.overflowing_add(y).1 {
+							if y.is_zero() {
 								return TestResult::discard();
 							}
 
 							TestResult::from_bool(
-								x + y > x
+								try_expr!(x + y) > x
 							)
 						}
 					}
 
 					quickcheck! {
 						fn mul_increases(x: $uint_ty, y: $uint_ty) -> TestResult {
-							if y.is_zero() || x.overflowing_mul(y).1 {
+							if y.is_zero() {
 								return TestResult::discard();
 							}
 
 							TestResult::from_bool(
-								x * y >= x
+								try_expr!(x * y) >= x
 							)
 						}
 					}
