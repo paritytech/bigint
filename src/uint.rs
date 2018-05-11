@@ -159,20 +159,20 @@ macro_rules! uint_full_mul_reg {
 							let (hi, low) = split_u128(a as u128 * b as u128);
 
 							let overflow = {
-								let	existing_low = &mut	ret[i +	j];
-								let	(low, o) = low.overflowing_add(*existing_low);
-								*existing_low =	low;
+								let existing_low = &mut ret[i + j];
+								let (low, o) = low.overflowing_add(*existing_low);
+								*existing_low = low;
 								o
 							};
 
 							carry = {
-								let	existing_hi	= &mut ret[i + j + 1];
+								let existing_hi = &mut ret[i + j + 1];
 								let hi = hi + overflow as u64;
-								let	(hi, o0) = hi.overflowing_add(carry);
-								let	(hi, o1) = hi.overflowing_add(*existing_hi);
+								let (hi, o0) = hi.overflowing_add(carry);
+								let (hi, o1) = hi.overflowing_add(*existing_hi);
 								*existing_hi = hi;
 
-								(o0	| o1) as u64
+								(o0 | o1) as u64
 							}
 						}
 					}
@@ -423,7 +423,7 @@ macro_rules! construct_uint {
 				use core::cmp;
 				use rustc_hex::ToHex;;
 
-				if self.is_zero() { return "0".to_owned(); }	// special case.
+				if self.is_zero() { return "0".to_owned(); } // special case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
 				let bp7 = self.bits() + 7;
@@ -2159,7 +2159,7 @@ mod tests {
 		uint_arbitrary!(U512, 64);
 
 		macro_rules! o_try {
-			($o:expr)	=> {{
+			($o:expr) => {{
 				let (val, o) = $o;
 				if o { return ::quickcheck::TestResult::discard(); }
 				val
@@ -2273,9 +2273,9 @@ mod tests {
 
 					quickcheck! {
 						fn pow_mul(x: $uint_ty) -> TestResult {
-							let	(p2, o)	= x.overflowing_pow($uint_ty::from(2));
+							let (p2, o) = x.overflowing_pow($uint_ty::from(2));
 							if o { return TestResult::discard(); }
-							let	(p3, o)	= x.overflowing_pow($uint_ty::from(3));
+							let (p3, o) = x.overflowing_pow($uint_ty::from(3));
 							if o { return TestResult::discard(); }
 
 							TestResult::from_bool(
