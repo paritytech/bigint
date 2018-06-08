@@ -975,6 +975,24 @@ impl U256 {
 	pub fn full_mul(self, other: U256) -> U512 {
 		U512(uint_full_mul_reg!(U256, 4, self, other))
 	}
+
+	/// Find modular inverse by modulo p
+	pub fn mod_inverse(self, p: Self) -> Self {
+		let mut mn = (p, self);
+		let mut xy = (U256::zero(), U256::one());
+
+		while mn.1 != U256::zero() {
+			let sb: U256 = ((mn.0 / mn.1).full_mul(xy.1) % U512::from(p)).into();
+			if sb > xy.0 {
+				xy = (xy.1, p - ((sb - xy.0) % p))
+			} else {
+				xy = (xy.1, xy.0 - sb)
+			}
+			mn = (mn.1, mn.0 % mn.1);
+		}
+
+		xy.0
+	}
 }
 
 impl From<U256> for U512 {
@@ -1445,9 +1463,9 @@ mod tests {
 	#[should_panic]
 	#[cfg(debug_assertions)]
 	pub fn uint128_add_overflow_panic() {
-		U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-		+
-		U128::from_str("ffffffffffffffffffffffffffffffff").unwrap();
+		let _res = U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
+			+
+			U128::from_str("ffffffffffffffffffffffffffffffff").unwrap();
 	}
 
 	#[test]
@@ -1481,9 +1499,9 @@ mod tests {
 	#[test]
 	#[should_panic]
 	pub fn uint256_mul_overflow_panic() {
-		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-		*
-		U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
+		let _res = U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
+			*
+			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
 	}
 
 	#[test]
@@ -1500,9 +1518,9 @@ mod tests {
 	#[test]
 	#[should_panic]
 	pub fn uint256_sub_overflow_panic() {
-		U256::from_str("0").unwrap()
-		-
-		U256::from_str("1").unwrap();
+		let _res = U256::from_str("0").unwrap()
+			-
+			U256::from_str("1").unwrap();
 	}
 
 	#[test]
@@ -2077,6 +2095,17 @@ mod tests {
 		u256.to_little_endian(&mut new_raw);
 
 		assert_eq!(&raw, &new_raw[..31]);
+	}
+
+	#[test]
+	fn modular_inverse() {
+		let modulo = U256::from_dec_str("115792089210356248762697446949407573530086143415290314195533631308867097853951").unwrap();
+		let number = U256::from_dec_str("48439561293906451759052585252797914202762949526041747995844080717082404635286").unwrap();
+		let mod_inv = number.mod_inverse(modulo);
+		assert_eq!(
+			mod_inv,
+			U256::from_dec_str("101489101214698129329668954935570020318890663581888936938143465331216272806456").unwrap()
+		)
 	}
 
 	#[test]
