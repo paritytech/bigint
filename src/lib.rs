@@ -22,6 +22,12 @@ extern crate crunchy;
 #[macro_use]
 extern crate heapsize;
 
+#[cfg(feature="serialize")]
+extern crate serde;
+#[cfg(feature="serialize")]
+#[macro_use]
+extern crate serde_derive;
+
 #[cfg(feature="std")]
 extern crate core;
 

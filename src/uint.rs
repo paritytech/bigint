@@ -266,6 +266,7 @@ macro_rules! construct_uint {
 		/// Little-endian large integer type
 		#[repr(C)]
 		#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+		#[cfg_attr(feature="serialize", derive(Serialize, Deserialize))]
 		pub struct $name(pub [u64; $n_words]);
 
 		impl $name {
