@@ -430,7 +430,7 @@ macro_rules! construct_uint {
 				use core::cmp;
 				use rustc_hex::ToHex;;
 
-				if self.is_zero() { return "0".to_owned(); } // special case.
+				if self.is_zero() { return "0".to_owned(); } // construct_uintspecial case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
 				let bp7 = self.bits() + 7;
@@ -910,34 +910,35 @@ macro_rules! construct_uint {
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				::core::fmt::Display::fmt(self, f)
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::Display for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				if self.is_zero() {
 					return write!(f, "0");
 				}
 
-				let mut s = String::new();
+				let mut buf = [0_u8, $n_words*8];
+				let mut i = buf.len() - 1;
 				let mut current = *self;
 				let ten = $name::from(10);
 
 				while !current.is_zero() {
-					s = format!("{}{}", (current % ten).low_u32(), s);
+					let digit = (current % ten).low_u32() as u8;
+					buf[i] = digit + b'0';
 					current = current / ten;
+					i -= 1;
 				}
 
-				write!(f, "{}", s)
+				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
+				f.write_str(s)
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
@@ -953,13 +954,6 @@ macro_rules! construct_uint {
 					}
 				}
 				Ok(())
-			}
-		}
-
-		#[cfg(feature="std")]
-		impl From<&'static str> for $name {
-			fn from(s: &'static str) -> Self {
-				s.parse().unwrap()
 			}
 		}
 	);
@@ -1997,25 +1991,25 @@ mod tests {
 		let (result, _) = U256([1, 0, 0, 0]).overflowing_mul(U256([0, 0, 0, u64::max_value()]));
 		assert_eq!(U256([0, 0, 0, u64::max_value()]), result);
 
-		let x1: U256 = "0000000000000000000000000000000000000000000000000000012365124623".into();
-		let x2sqr_right: U256 = "000000000000000000000000000000000000000000014baeef72e0378e2328c9".into();
+		let x1: U256 = "0000000000000000000000000000000000000000000000000000012365124623".parse().unwrap();
+		let x2sqr_right: U256 = "000000000000000000000000000000000000000000014baeef72e0378e2328c9".parse().unwrap();
 		let x1sqr = x1 * x1;
 		assert_eq!(x2sqr_right, x1sqr);
 
 		let x1cube = x1sqr * x1;
-		let x1cube_right: U256 = "0000000000000000000000000000000001798acde139361466f712813717897b".into();
+		let x1cube_right: U256 = "0000000000000000000000000000000001798acde139361466f712813717897b".parse().unwrap();
 		assert_eq!(x1cube_right, x1cube);
 
 		let x1quad = x1cube * x1;
-		let x1quad_right: U256 = "000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".into();
+		let x1quad_right: U256 = "000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse().unwrap();
 		assert_eq!(x1quad_right, x1quad);
 
 		let x1penta = x1quad * x1;
-		let x1penta_right: U256 = "00000000000001e92875ac24be246e1c57e0507e8c46cc8d233b77f6f4c72993".into();
+		let x1penta_right: U256 = "00000000000001e92875ac24be246e1c57e0507e8c46cc8d233b77f6f4c72993".parse().unwrap();
 		assert_eq!(x1penta_right, x1penta);
 
 		let x1septima = x1penta * x1;
-		let x1septima_right: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
+		let x1septima_right: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".parse().unwrap();
 		assert_eq!(x1septima_right, x1septima);
 	}
 
@@ -2028,7 +2022,7 @@ mod tests {
 
 	#[test]
 	fn little_endian() {
-		let number: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
+		let number: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".parse().unwrap();
 		let expected = [
 			0x19, 0xe1, 0xee, 0xd7,
 			0x32, 0xf9, 0x42, 0x30,
@@ -2111,7 +2105,7 @@ mod tests {
 
 	#[test]
 	fn fixed_arrays_roundtrip() {
-		let raw: U256 = "7094875209347850239487502394881".into();
+		let raw: U256 = "7094875209347850239487502394881".parse().unwrap();
 		let array: [u8; 32] = raw.into();
 		let new_raw = array.into();
 
@@ -2148,18 +2142,18 @@ mod tests {
 
 	#[test]
 	fn leading_zeros() {
-		assert_eq!(U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 95);
-		assert_eq!(U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 0);
-		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000001").leading_zeros(), 255);
-		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").leading_zeros(), 256);
+		assert_eq!("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse::<U256>().unwrap().leading_zeros(), 95);
+		assert_eq!("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse::<U256>().unwrap().leading_zeros(), 0);
+		assert_eq!("0000000000000000000000000000000000000000000000000000000000000001".parse::<U256>().unwrap().leading_zeros(), 255);
+		assert_eq!("0000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().leading_zeros(), 256);
 	}
 
 	#[test]
 	fn trailing_zeros() {
-		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(), 92);
-		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(), 0);
-		assert_eq!(U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 255);
-		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
+		assert_eq!("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 92);
+		assert_eq!("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f".parse::<U256>().unwrap().trailing_zeros(), 0);
+		assert_eq!("8000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 255);
+		assert_eq!("0000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 256);
 	}
 
 	mod laws {
