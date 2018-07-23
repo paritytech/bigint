@@ -430,7 +430,7 @@ macro_rules! construct_uint {
 				use core::cmp;
 				use rustc_hex::ToHex;;
 
-				if self.is_zero() { return "0".to_owned(); } // construct_uintspecial case.
+				if self.is_zero() { return "0".to_owned(); } // special case.
 				let mut bytes = [0u8; 8 * $n_words];
 				self.to_big_endian(&mut bytes);
 				let bp7 = self.bits() + 7;
@@ -934,6 +934,7 @@ macro_rules! construct_uint {
 					i -= 1;
 				}
 
+				// sequence of `'0'..'9'` chars are guaranteed to be a valid UTF8 string
 				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
 				f.write_str(s)
 			}
@@ -1167,7 +1168,7 @@ known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
 #[cfg(feature="std")]
-mod tests {
+mod std_tests {
 	use uint::{U128, U256, U512};
 	use std::str::FromStr;
 	use super::FromDecStrErr;
