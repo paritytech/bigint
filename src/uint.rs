@@ -927,15 +927,18 @@ macro_rules! construct_uint {
 				let mut current = *self;
 				let ten = $name::from(10);
 
-				while !current.is_zero() {
+				loop {
 					let digit = (current % ten).low_u32() as u8;
 					buf[i] = digit + b'0';
 					current = current / ten;
+					if !current.is_zero() {
+						break;
+					}
 					i -= 1;
 				}
 
 				// sequence of `'0'..'9'` chars are guaranteed to be a valid UTF8 string
-				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
+				let s = ::core::str::from_utf8(&buf[i..]).unwrap();
 				f.write_str(s)
 			}
 		}
@@ -2016,8 +2019,7 @@ mod std_tests {
 
 	#[test]
 	fn example() {
-		let mut val: U256 = 1023.into();
-		for _ in 0..200 { val = val * 2.into() }
+		let val = (0..200).fold(U256::from(1023), |acc, _| acc * 2.into());
 		assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
 	}
 
