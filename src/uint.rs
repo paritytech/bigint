@@ -937,7 +937,7 @@ macro_rules! construct_uint {
 					i -= 1;
 				}
 
-				// sequence of `'0'..'9'` chars are guaranteed to be a valid UTF8 string
+				// sequence of `'0'..'9'` chars is guaranteed to be a valid UTF8 string
 				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
 				f.write_str(s)
 			}
