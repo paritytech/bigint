@@ -1180,14 +1180,30 @@ known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
 mod tests {
-    use uint::U256;
+	use uint::{U128, U256, U512};
 
 	#[test]
-	pub fn display() {
+	pub fn display_u128() {
+		let expected = "340282366920938463463374607431768211455";
+		let value = U128::MAX_VALUE;
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
+	}
+
+	#[test]
+	pub fn display_u256() {
+		let expected = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 		let value = U256::MAX_VALUE;
-		let mut buf = [b'0'; 64];
-		write!(&buf, "{}", value);
-		assert_eq!(string, "");
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
+	}
+
+	#[test]
+	pub fn display_u512() {
+		let expected = "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095";
+		let value = U512::MAX_VALUE;
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
 	}
 }
 

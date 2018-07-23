@@ -9,6 +9,7 @@
 //! Efficient large, fixed-size big integers and hashes.
 
 #![cfg_attr(not(feature="std"), no_std)]
+#![cfg_attr(all(not(feature="std"), test), feature(alloc))]
 
 extern crate byteorder;
 
@@ -34,6 +35,10 @@ extern crate core;
 #[cfg(all(feature = "std", test))]
 #[macro_use]
 extern crate quickcheck;
+
+#[cfg(all(not(feature = "std"), test))]
+#[macro_use]
+extern crate alloc;
 
 pub mod uint;
 pub use ::uint::*;
