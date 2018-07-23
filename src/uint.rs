@@ -922,7 +922,7 @@ macro_rules! construct_uint {
 					return write!(f, "0");
 				}
 
-				let mut buf = [0_u8; $n_words*16];
+				let mut buf = [0_u8; $n_words*20];
 				let mut i = buf.len() - 1;
 				let mut current = *self;
 				let ten = $name::from(10);
@@ -938,7 +938,7 @@ macro_rules! construct_uint {
 				}
 
 				// sequence of `'0'..'9'` chars are guaranteed to be a valid UTF8 string
-				let s = ::core::str::from_utf8(&buf[i..]).unwrap();
+				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
 				f.write_str(s)
 			}
 		}
