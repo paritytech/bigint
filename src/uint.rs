@@ -928,7 +928,7 @@ macro_rules! construct_uint {
 				let ten = $name::from(10);
 
 				loop {
-					let digit = (current % ten).low_u32() as u8;
+					let digit = (current % ten).low_u64() as u8;
 					buf[i] = digit + b'0';
 					current = current / ten;
 					if current.is_zero() {
