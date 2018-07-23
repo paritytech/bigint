@@ -270,6 +270,8 @@ macro_rules! construct_uint {
 		pub struct $name(pub [u64; $n_words]);
 
 		impl $name {
+			pub const MAX_VALUE: $name = $name([u64::max_value(); $n_words]);
+
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
@@ -960,6 +962,13 @@ macro_rules! construct_uint {
 				Ok(())
 			}
 		}
+
+		#[cfg(feature="std")]
+		impl From<&'static str> for $name {
+			fn from(s: &'static str) -> Self {
+				s.parse().unwrap()
+			}
+		}
 	);
 }
 
@@ -1168,6 +1177,19 @@ impl From<U512> for [u8; 64] {
 
 #[cfg(feature="heapsizeof")]
 known_heap_size!(0, U128, U256);
+
+#[cfg(test)]
+mod tests {
+    use uint::U256;
+
+	#[test]
+	pub fn display() {
+		let value = U256::MAX_VALUE;
+		let mut buf = [b'0'; 64];
+		write!(&buf, "{}", value);
+		assert_eq!(string, "");
+	}
+}
 
 #[cfg(test)]
 #[cfg(feature="std")]
@@ -1451,9 +1473,9 @@ mod std_tests {
 	pub fn uint128_add_overflow() {
 		assert_eq!(
 			U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-			.overflowing_add(
-				U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
-			),
+				.overflowing_add(
+					U128::from_str("ffffffffffffffffffffffffffffffff").unwrap()
+				),
 			(U128::from_str("fffffffffffffffffffffffffffffffe").unwrap(), true)
 		);
 	}
@@ -1478,8 +1500,8 @@ mod std_tests {
 	pub fn uint512_mul() {
 		assert_eq!(
 			U512::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			*
-			U512::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(),
+				*
+				U512::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(),
 			U512::from_str("3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000001").unwrap()
 		);
 	}
@@ -1488,9 +1510,9 @@ mod std_tests {
 	pub fn uint256_mul_overflow() {
 		assert_eq!(
 			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			.overflowing_mul(
-				U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			),
+				.overflowing_mul(
+					U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
+				),
 			(U256::from_str("1").unwrap(), true)
 		);
 	}
@@ -1507,11 +1529,11 @@ mod std_tests {
 	pub fn uint256_sub_overflow() {
 		assert_eq!(
 			U256::from_str("0").unwrap()
-			.overflowing_sub(
-				U256::from_str("1").unwrap()
-			),
+				.overflowing_sub(
+					U256::from_str("1").unwrap()
+				),
 			(U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(), true)
-			);
+		);
 	}
 
 	#[test]
@@ -1526,7 +1548,7 @@ mod std_tests {
 	pub fn uint256_shl() {
 		assert_eq!(
 			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			<< 4,
+				<< 4,
 			U256::from_str("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0").unwrap()
 		);
 	}
@@ -1535,12 +1557,12 @@ mod std_tests {
 	pub fn uint256_shl_words() {
 		assert_eq!(
 			U256::from_str("0000000000000001ffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			<< 64,
+				<< 64,
 			U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000").unwrap()
 		);
 		assert_eq!(
 			U256::from_str("0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			<< 64,
+				<< 64,
 			U256::from_str("ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000").unwrap()
 		);
 	}
@@ -1549,10 +1571,10 @@ mod std_tests {
 	pub fn uint256_mul() {
 		assert_eq!(
 			U256::from_str("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap()
-			*
-			U256::from_str("2").unwrap(),
+				*
+				U256::from_str("2").unwrap(),
 			U256::from_str("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe").unwrap()
-			);
+		);
 	}
 
 	#[test]
@@ -1587,8 +1609,8 @@ mod std_tests {
 		assert_eq!(format!("{}", U256::from(0)), "0");
 	}
 
-    #[test]
-    fn u512_multi_adds() {
+	#[test]
+	fn u512_multi_adds() {
 		let (result, _) = U512([0, 0, 0, 0, 0, 0, 0, 0]).overflowing_add(U512([0, 0, 0, 0, 0, 0, 0, 0]));
 		assert_eq!(result, U512([0, 0, 0, 0, 0, 0, 0, 0]));
 
@@ -1613,32 +1635,32 @@ mod std_tests {
 
 		let (_, overflow) = U512([0, 0, 0, 0, 0, 0, 0, MAX])
 			.overflowing_add(U512([0, 0, 0, 0, 0, 0, 0, MAX]));
-        assert!(overflow);
+		assert!(overflow);
 
 		let (_, overflow) = U512([0, 0, 0, 0, 0, 0, 0, MAX])
 			.overflowing_add(U512([0, 0, 0, 0, 0, 0, 0, 0]));
 		assert!(!overflow);
 	}
 
-    #[test]
-    fn u256_multi_adds() {
-        let (result, _) = U256([0, 0, 0, 0]).overflowing_add(U256([0, 0, 0, 0]));
-        assert_eq!(result, U256([0, 0, 0, 0]));
+	#[test]
+	fn u256_multi_adds() {
+		let (result, _) = U256([0, 0, 0, 0]).overflowing_add(U256([0, 0, 0, 0]));
+		assert_eq!(result, U256([0, 0, 0, 0]));
 
-        let (result, _) = U256([0, 0, 0, 1]).overflowing_add(U256([0, 0, 0, 1]));
-        assert_eq!(result, U256([0, 0, 0, 2]));
+		let (result, _) = U256([0, 0, 0, 1]).overflowing_add(U256([0, 0, 0, 1]));
+		assert_eq!(result, U256([0, 0, 0, 2]));
 
-        let (result, overflow) = U256([0, 0, 2, 1]).overflowing_add(U256([0, 0, 3, 1]));
-        assert_eq!(result, U256([0, 0, 5, 2]));
-        assert!(!overflow);
+		let (result, overflow) = U256([0, 0, 2, 1]).overflowing_add(U256([0, 0, 3, 1]));
+		assert_eq!(result, U256([0, 0, 5, 2]));
+		assert!(!overflow);
 
-        let (_, overflow) = U256([MAX, MAX, MAX, MAX])
+		let (_, overflow) = U256([MAX, MAX, MAX, MAX])
 			.overflowing_add(U256([MAX, MAX, MAX, MAX]));
-        assert!(overflow);
+		assert!(overflow);
 
-        let (_, overflow) = U256([0, 0, 0, MAX]).overflowing_add(U256([0, 0, 0, MAX]));
-        assert!(overflow);
-    }
+		let (_, overflow) = U256([0, 0, 0, MAX]).overflowing_add(U256([0, 0, 0, MAX]));
+		assert!(overflow);
+	}
 
 
 	#[test]
@@ -1787,8 +1809,8 @@ mod std_tests {
 		assert_eq!(U256([0, 0, 0, MAX]), result);
 	}
 
-    #[test]
-    fn u256_multi_muls_overflow() {
+	#[test]
+	fn u256_multi_muls_overflow() {
 		let (_, overflow) = U256([1, 0, 0, 0]).overflowing_mul(U256([0, 0, 0, 0]));
 		assert!(!overflow);
 
@@ -1815,7 +1837,7 @@ mod std_tests {
 
 		let (_, overflow) = U256([0, 0, 8, 0]).overflowing_mul(U256([0, 0, 7, 0]));
 		assert!(overflow);
-    }
+	}
 
 	#[test]
 	fn big_endian() {
@@ -1827,7 +1849,7 @@ mod std_tests {
 		source.to_big_endian(&mut target);
 		assert_eq!(
 			vec![0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-				0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8],
+				 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8],
 			target);
 
 		let source = U256([512, 0, 0, 0]);
@@ -1836,7 +1858,7 @@ mod std_tests {
 		source.to_big_endian(&mut target);
 		assert_eq!(
 			vec![0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-				0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 2u8, 0u8],
+				 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 2u8, 0u8],
 			target);
 
 		let source = U256([0, 512, 0, 0]);
@@ -1845,14 +1867,14 @@ mod std_tests {
 		source.to_big_endian(&mut target);
 		assert_eq!(
 			vec![0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-				0u8, 0u8, 0u8, 0u8, 0u8, 2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8],
+				 0u8, 0u8, 0u8, 0u8, 0u8, 2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8],
 			target);
 
 		let source = U256::from_str("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
 		source.to_big_endian(&mut target);
 		assert_eq!(
 			vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11,
-				0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20],
+				 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20],
 			target);
 	}
 
@@ -1995,37 +2017,38 @@ mod std_tests {
 		let (result, _) = U256([1, 0, 0, 0]).overflowing_mul(U256([0, 0, 0, u64::max_value()]));
 		assert_eq!(U256([0, 0, 0, u64::max_value()]), result);
 
-		let x1: U256 = "0000000000000000000000000000000000000000000000000000012365124623".parse().unwrap();
-		let x2sqr_right: U256 = "000000000000000000000000000000000000000000014baeef72e0378e2328c9".parse().unwrap();
+		let x1: U256 = "0000000000000000000000000000000000000000000000000000012365124623".into();
+		let x2sqr_right: U256 = "000000000000000000000000000000000000000000014baeef72e0378e2328c9".into();
 		let x1sqr = x1 * x1;
 		assert_eq!(x2sqr_right, x1sqr);
 
 		let x1cube = x1sqr * x1;
-		let x1cube_right: U256 = "0000000000000000000000000000000001798acde139361466f712813717897b".parse().unwrap();
+		let x1cube_right: U256 = "0000000000000000000000000000000001798acde139361466f712813717897b".into();
 		assert_eq!(x1cube_right, x1cube);
 
 		let x1quad = x1cube * x1;
-		let x1quad_right: U256 = "000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse().unwrap();
+		let x1quad_right: U256 = "000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".into();
 		assert_eq!(x1quad_right, x1quad);
 
 		let x1penta = x1quad * x1;
-		let x1penta_right: U256 = "00000000000001e92875ac24be246e1c57e0507e8c46cc8d233b77f6f4c72993".parse().unwrap();
+		let x1penta_right: U256 = "00000000000001e92875ac24be246e1c57e0507e8c46cc8d233b77f6f4c72993".into();
 		assert_eq!(x1penta_right, x1penta);
 
 		let x1septima = x1penta * x1;
-		let x1septima_right: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".parse().unwrap();
+		let x1septima_right: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
 		assert_eq!(x1septima_right, x1septima);
 	}
 
 	#[test]
 	fn example() {
-		let val = (0..200).fold(U256::from(1023), |acc, _| acc * 2.into());
+		let mut val: U256 = 1023.into();
+		for _ in 0..200 { val = val * 2.into() }
 		assert_eq!(&format!("{}", val), "1643897619276947051879427220465009342380213662639797070513307648");
 	}
 
 	#[test]
 	fn little_endian() {
-		let number: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".parse().unwrap();
+		let number: U256 = "00022cca1da3f6e5722b7d3cc5bbfb486465ebc5a708dd293042f932d7eee119".into();
 		let expected = [
 			0x19, 0xe1, 0xee, 0xd7,
 			0x32, 0xf9, 0x42, 0x30,
@@ -2108,7 +2131,7 @@ mod std_tests {
 
 	#[test]
 	fn fixed_arrays_roundtrip() {
-		let raw: U256 = "7094875209347850239487502394881".parse().unwrap();
+		let raw: U256 = "7094875209347850239487502394881".into();
 		let array: [u8; 32] = raw.into();
 		let new_raw = array.into();
 
@@ -2145,18 +2168,18 @@ mod std_tests {
 
 	#[test]
 	fn leading_zeros() {
-		assert_eq!("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse::<U256>().unwrap().leading_zeros(), 95);
-		assert_eq!("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1".parse::<U256>().unwrap().leading_zeros(), 0);
-		assert_eq!("0000000000000000000000000000000000000000000000000000000000000001".parse::<U256>().unwrap().leading_zeros(), 255);
-		assert_eq!("0000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().leading_zeros(), 256);
+		assert_eq!(U256::from("000000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 95);
+		assert_eq!(U256::from("f00000000000000000000001adbdd6bd6ff027485484b97f8a6a4c7129756dd1").leading_zeros(), 0);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000001").leading_zeros(), 255);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").leading_zeros(), 256);
 	}
 
 	#[test]
 	fn trailing_zeros() {
-		assert_eq!("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 92);
-		assert_eq!("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f".parse::<U256>().unwrap().trailing_zeros(), 0);
-		assert_eq!("8000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 255);
-		assert_eq!("0000000000000000000000000000000000000000000000000000000000000000".parse::<U256>().unwrap().trailing_zeros(), 256);
+		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd100000000000000000000000").trailing_zeros(), 92);
+		assert_eq!(U256::from("1adbdd6bd6ff027485484b97f8a6a4c7129756dd10000000000000000000000f").trailing_zeros(), 0);
+		assert_eq!(U256::from("8000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 255);
+		assert_eq!(U256::from("0000000000000000000000000000000000000000000000000000000000000000").trailing_zeros(), 256);
 	}
 
 	mod laws {
