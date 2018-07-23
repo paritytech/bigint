@@ -270,7 +270,7 @@ macro_rules! construct_uint {
 		pub struct $name(pub [u64; $n_words]);
 
 		impl $name {
-			pub const MAX_VALUE: $name = $name([u64::max_value(); $n_words]);
+			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
@@ -1185,7 +1185,7 @@ mod tests {
 	#[test]
 	pub fn display_u128() {
 		let expected = "340282366920938463463374607431768211455";
-		let value = U128::MAX_VALUE;
+		let value = U128::MAX;
 		assert_eq!(format!("{}", value), expected);
 		assert_eq!(format!("{:?}", value), expected);
 	}
@@ -1193,7 +1193,7 @@ mod tests {
 	#[test]
 	pub fn display_u256() {
 		let expected = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-		let value = U256::MAX_VALUE;
+		let value = U256::MAX;
 		assert_eq!(format!("{}", value), expected);
 		assert_eq!(format!("{:?}", value), expected);
 	}
@@ -1201,7 +1201,7 @@ mod tests {
 	#[test]
 	pub fn display_u512() {
 		let expected = "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095";
-		let value = U512::MAX_VALUE;
+		let value = U512::MAX;
 		assert_eq!(format!("{}", value), expected);
 		assert_eq!(format!("{:?}", value), expected);
 	}
