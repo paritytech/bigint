@@ -922,7 +922,7 @@ macro_rules! construct_uint {
 					return write!(f, "0");
 				}
 
-				let mut buf = [0_u8, $n_words*8];
+				let mut buf = [0_u8; $n_words*16];
 				let mut i = buf.len() - 1;
 				let mut current = *self;
 				let ten = $name::from(10);
@@ -931,7 +931,7 @@ macro_rules! construct_uint {
 					let digit = (current % ten).low_u32() as u8;
 					buf[i] = digit + b'0';
 					current = current / ten;
-					if !current.is_zero() {
+					if current.is_zero() {
 						break;
 					}
 					i -= 1;
