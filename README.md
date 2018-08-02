@@ -38,3 +38,16 @@ in a `no_std` context, add the following to your `Cargo.toml`:
 [dependencies]
 bigint = { version = "4", default-features = false }
 ```
+
+# License
+
+`bigint` is primarily distributed under the terms of both the MIT
+license and the Apache License (Version 2.0), at your choice.
+
+See LICENSE-APACHE, and LICENSE-MIT for details.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in `bigint` by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
