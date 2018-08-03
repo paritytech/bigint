@@ -270,6 +270,8 @@ macro_rules! construct_uint {
 		pub struct $name(pub [u64; $n_words]);
 
 		impl $name {
+			pub const MAX: $name = $name([u64::max_value(); $n_words]);
+
 			/// Convert from a decimal string.
 			pub fn from_dec_str(value: &str) -> Result<Self, FromDecStrErr> {
 				if !value.bytes().all(|b| b >= 48 && b <= 57) {
@@ -910,34 +912,39 @@ macro_rules! construct_uint {
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::Debug for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				::core::fmt::Display::fmt(self, f)
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::Display for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				if self.is_zero() {
 					return write!(f, "0");
 				}
 
-				let mut s = String::new();
+				let mut buf = [0_u8; $n_words*20];
+				let mut i = buf.len() - 1;
 				let mut current = *self;
 				let ten = $name::from(10);
 
-				while !current.is_zero() {
-					s = format!("{}{}", (current % ten).low_u32(), s);
+				loop {
+					let digit = (current % ten).low_u64() as u8;
+					buf[i] = digit + b'0';
 					current = current / ten;
+					if current.is_zero() {
+						break;
+					}
+					i -= 1;
 				}
 
-				write!(f, "{}", s)
+				// sequence of `'0'..'9'` chars is guaranteed to be a valid UTF8 string
+				let s = unsafe {::core::str::from_utf8_unchecked(&buf[i..])};
+				f.write_str(s)
 			}
 		}
 
-		#[cfg(feature="std")]
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
@@ -1172,8 +1179,37 @@ impl From<U512> for [u8; 64] {
 known_heap_size!(0, U128, U256);
 
 #[cfg(test)]
-#[cfg(feature="std")]
 mod tests {
+	use uint::{U128, U256, U512};
+
+	#[test]
+	pub fn display_u128() {
+		let expected = "340282366920938463463374607431768211455";
+		let value = U128::MAX;
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
+	}
+
+	#[test]
+	pub fn display_u256() {
+		let expected = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+		let value = U256::MAX;
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
+	}
+
+	#[test]
+	pub fn display_u512() {
+		let expected = "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095";
+		let value = U512::MAX;
+		assert_eq!(format!("{}", value), expected);
+		assert_eq!(format!("{:?}", value), expected);
+	}
+}
+
+#[cfg(test)]
+#[cfg(feature="std")]
+mod std_tests {
 	use uint::{U128, U256, U512};
 	use std::str::FromStr;
 	use super::FromDecStrErr;
