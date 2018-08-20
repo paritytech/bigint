@@ -10,7 +10,6 @@ This crate is **deprecated** and will not be developed further.  Users are invit
 ### Old readme:
 Fixed-sized integers arithmetic
 
-
 To specify a dependency, add to `Cargo.toml`
 
 ```toml
