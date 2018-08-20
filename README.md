@@ -4,7 +4,12 @@
 
 [API Documentation](https://docs.rs/bigint/)
 
+## DEPRECATED
+This crate is **deprecated** and will not be developed further.  Users are invited to prefer the [`uint`](https://crates.io/crates/uint) crate instead.
+
+### Old readme:
 Fixed-sized integers arithmetic
+
 
 To specify a dependency, add to `Cargo.toml`
 
@@ -23,7 +28,7 @@ fn main() {
 	let mut val: U256 = 1023.into();
 	for _ in 0..200 { val = val * 2.into() }
 	assert_eq!(
-		&format!("{}", val), 
+		&format!("{}", val),
 		"1643897619276947051879427220465009342380213662639797070513307648"
 	);
 }

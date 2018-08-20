@@ -26,3 +26,6 @@ std = ["rustc-hex"]
 [[example]]
 name = "modular"
 required-features = ["std"]
+
+[badges]
+maintenance = { status = "deprecated" }
