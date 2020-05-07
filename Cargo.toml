@@ -1,11 +1,12 @@
 [package]
-description = "Large fixed-size integers arithmetics"
+description = "DEPRECATED: use uint instead"
 homepage = "http://parity.io"
 repository = "https://github.com/ethcore/bigint"
 license = "MIT/Apache-2.0"
 name = "bigint"
-version = "4.4.2"
+version = "4.4.3"
 authors = ["Parity Technologies <admin@parity.io>"]
+readme = "README.md"
 
 [dependencies]
 rustc-hex = { version = "1.0", optional = true }
