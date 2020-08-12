@@ -82,7 +82,8 @@ macro_rules! uint_overflowing_binop {
 		let $name(ref me) = $self_expr;
 		let $name(ref you) = $other;
 
-		let mut ret = unsafe { ::core::mem::uninitialized() };
+		let mut ret = unsafe { ::core::mem::MaybeUninit::uninit().assume_init() };
+
 		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
 		let mut carry = 0u64;
 
@@ -280,6 +281,26 @@ macro_rules! construct_uint {
 
 				let mut res = Self::default();
 				for b in value.bytes().map(|b| b - 48) {
+					let (r, overflow) = res.overflowing_mul_u32(10);
+					if overflow {
+						return Err(FromDecStrErr::InvalidLength);
+					}
+					let (r, overflow) = r.overflowing_add(b.into());
+					if overflow {
+						return Err(FromDecStrErr::InvalidLength);
+					}
+					res = r;
+				}
+				Ok(res)
+			}
+
+			pub fn from_u8(value: &[u8]) -> Result<Self, FromDecStrErr> {
+				if !value.iter().all(|b| *b >= 48 && *b <= 57) {
+					return Err(FromDecStrErr::InvalidCharacter)
+				}
+
+				let mut res = Self::default();
+				for b in value.iter().map(|b| *b - 48) {
 					let (r, overflow) = res.overflowing_mul_u32(10);
 					if overflow {
 						return Err(FromDecStrErr::InvalidLength);
@@ -948,14 +969,14 @@ macro_rules! construct_uint {
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
-				try!(write!(f, "0x"));
+				write!(f, "0x")?;
 				let mut latch = false;
 				for ch in data.iter().rev() {
 					for x in 0..16 {
 						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
 						if !latch { latch = nibble != 0 }
 						if latch {
-							try!(write!(f, "{:x}", nibble));
+							write!(f, "{:x}", nibble)?;
 						}
 					}
 				}
