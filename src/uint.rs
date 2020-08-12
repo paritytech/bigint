@@ -948,14 +948,14 @@ macro_rules! construct_uint {
 		impl ::core::fmt::LowerHex for $name {
 			fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
 				let &$name(ref data) = self;
-				try!(write!(f, "0x"));
+				write!(f, "0x")?;
 				let mut latch = false;
 				for ch in data.iter().rev() {
 					for x in 0..16 {
 						let nibble = (ch & (15u64 << ((15 - x) * 4) as u64)) >> (((15 - x) * 4) as u64);
 						if !latch { latch = nibble != 0 }
 						if latch {
-							try!(write!(f, "{:x}", nibble));
+							write!(f, "{:x}", nibble)?;
 						}
 					}
 				}
