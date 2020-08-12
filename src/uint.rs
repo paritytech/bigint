@@ -294,6 +294,26 @@ macro_rules! construct_uint {
 				Ok(res)
 			}
 
+			pub fn from_u8(value: &[u8]) -> Result<Self, FromDecStrErr> {
+				if !value.iter().all(|b| *b >= 48 && *b <= 57) {
+					return Err(FromDecStrErr::InvalidCharacter)
+				}
+
+				let mut res = Self::default();
+				for b in value.iter().map(|b| *b - 48) {
+					let (r, overflow) = res.overflowing_mul_u32(10);
+					if overflow {
+						return Err(FromDecStrErr::InvalidLength);
+					}
+					let (r, overflow) = r.overflowing_add(b.into());
+					if overflow {
+						return Err(FromDecStrErr::InvalidLength);
+					}
+					res = r;
+				}
+				Ok(res)
+			}
+
 			/// Conversion to u32
 			#[inline]
 			pub fn low_u32(&self) -> u32 {
