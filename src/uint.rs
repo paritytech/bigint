@@ -43,6 +43,15 @@ pub enum FromDecStrErr {
 	InvalidLength,
 }
 
+/// Conversion from hex string error
+#[derive(Debug, PartialEq)]
+pub enum FromHexStrErr {
+	/// Char not from range 0-f
+	InvalidCharacter,
+	/// Value does not fit into type
+	InvalidLength,
+}
+
 macro_rules! impl_map_from {
 	($thing:ident, $from:ty, $to:ty) => {
 		impl From<$from> for $thing {
@@ -290,6 +299,16 @@ macro_rules! construct_uint {
 					}
 					res = r;
 				}
+				Ok(res)
+			}
+
+			/// Convert from a hex string.
+			pub fn from_hex_str(value: &str) -> Result<Self, FromHexStrErr> {
+				if !value.bytes().all(|b| (b >= 48 && b <= 57) || (b >= 65 && b <= 70) || (b >= 97 && b <= 102)) {
+					return Err(FromHexStrErr::InvalidCharacter)
+				}
+
+				let mut res = Self::default();
 				Ok(res)
 			}
 
@@ -1212,7 +1231,7 @@ mod tests {
 mod std_tests {
 	use uint::{U128, U256, U512};
 	use std::str::FromStr;
-	use super::FromDecStrErr;
+	use super::{FromHexStrErr, FromDecStrErr};
 	use std::u64::MAX;
 
 	#[test]
@@ -1612,6 +1631,11 @@ mod std_tests {
 		assert_eq!(U256::from_dec_str("1024").unwrap(), U256::from(1024u64));
 		assert_eq!(U256::from_dec_str("115792089237316195423570985008687907853269984665640564039457584007913129639936"), Err(FromDecStrErr::InvalidLength));
 		assert_eq!(U256::from_dec_str("0x11"), Err(FromDecStrErr::InvalidCharacter));
+	}
+
+	#[test]
+	fn uint256_from_hex_str() {
+		assert_eq!(U256::from_hex_str("123456789abcdefg"), Err(FromHexStrErr::InvalidCharacter));
 	}
 
 	#[test]
