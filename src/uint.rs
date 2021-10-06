@@ -309,6 +309,22 @@ macro_rules! construct_uint {
 				}
 
 				let mut res = Self::default();
+				for b in value.bytes() {
+					let n = match b {
+						48 ..= 57 => b - 48,
+						65 ..= 70 => b - 55,
+						_ => b - 87,
+					};
+					let (r, overflow) = res.overflowing_mul_u32(16);
+					if overflow {
+						return Err(FromHexStrErr::InvalidLength);
+					}
+					let (r, overflow) = r.overflowing_add(n.into());
+					if overflow {
+						return Err(FromHexStrErr::InvalidLength);
+					}
+					res = r;
+				}
 				Ok(res)
 			}
 
@@ -449,7 +465,7 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn to_hex(&self) -> String {
 				use core::cmp;
-				use rustc_hex::ToHex;;
+				use rustc_hex::ToHex;
 
 				if self.is_zero() { return "0".to_owned(); } // special case.
 				let mut bytes = [0u8; 8 * $n_words];
@@ -1635,6 +1651,9 @@ mod std_tests {
 
 	#[test]
 	fn uint256_from_hex_str() {
+		assert_eq!(U256::from_hex_str("f").unwrap(), U256::from(15u64));
+		assert_eq!(U256::from_hex_str("400").unwrap(), U256::from(1024u64));
+		assert_eq!(U256::from_hex_str("10000000000000000000000000000000000000000000000000000000000000000"), Err(FromHexStrErr::InvalidLength));
 		assert_eq!(U256::from_hex_str("123456789abcdefg"), Err(FromHexStrErr::InvalidCharacter));
 	}
 
